@@ -40,6 +40,12 @@ public class GameCanvas extends Canvas{
 			
 			//	The goal is to find the closest grid location and send it into the game to handle
 			public void mouseClicked(MouseEvent e) {
+				
+				//	Don't allow mouse events if the game hasn't started
+				if (mode == MENU_MODE) {
+					return;
+				}
+				
 				Point p = e.getPoint();
 				
 				//	Get the location of the mouse relative to the center of the board
