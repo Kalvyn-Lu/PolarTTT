@@ -168,45 +168,53 @@ public class PolarTTT extends KeyAdapter{
 	 * Starts the game from scratch
 	 */
 	public void begin() {
-		turn = 0;
-		//	Reset our players
-		players[0] = players[1] = null;
-		
-		//	Empty the board
-		for(int i = 0; i < 5; i++) {
-			for (int j = 0; j < 12; j++){
-				board[i][j] = EMPTY;
-			}
-		}
-		for (int i = 0; i < 60; i++) {
-			history[i] = null;
-		}
-		
-		//	Switch to menu mode
-		canvas.gameoff();
-		frame.setVisible(true);
-		
-		//	Wait until the second player is set
-		//	(the first player is always set before the second)
-		synchronized (this) {
-			while (players[1] == null){
+		synchronized (frame) {
+			//	Game loop!
+			while (true) {
+				//	Reset everything
+				turn = 0;
+				players[0] = players[1] = null;
+				for(int i = 0; i < 5; i++) {
+					for (int j = 0; j < 12; j++){
+						board[i][j] = EMPTY;
+					}
+				}
+				for (int i = 0; i < 60; i++) {
+					history[i] = null;
+				}
+				
+				//	Switch to menu mode
+				canvas.gameoff();
+				frame.setVisible(true);
+				
+				//	Wait until the second player is set
+				//	(the first player is always set before the second)
+				synchronized (this) {
+					while (players[1] == null){
+						try {
+							this.wait();
+						}
+						catch (InterruptedException e) {
+							break;
+						}
+					}
+				}
+				//	Make the new players
+				players[0].newGame(this);
+				players[1].newGame(this);
+				
+				//	Set the game mode so the players aren't overwritten later
+				canvas.gameon();
+				
+				//	Ask player 1 to make a move
+				invokePlayerMove();
 				try {
-					this.wait();
-				}
-				catch (InterruptedException e) {
-					break;
+					frame.wait();
+				} catch (InterruptedException e) {
 				}
 			}
 		}
-		//	Make the new players
-		players[0].newGame(this);
-		players[1].newGame(this);
-		
-		//	Set the game mode so the players aren't overwritten later
-		canvas.gameon();
-		
-		//	Ask player 1 to make a move
-		invokePlayerMove();
+
 	}
 	/**
 	 * Requests the players' movements in sequence.
@@ -446,6 +454,15 @@ public class PolarTTT extends KeyAdapter{
 					this.notifyAll();
 				}
 			}
+			
+			else if (!gameon) {
+				synchronized(frame) {
+					frame.notifyAll();
+				}
+			}
+			break;
+		case KeyEvent.VK_ESCAPE:
+			System.exit(0);
 			break;
 		}
 	}

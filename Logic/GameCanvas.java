@@ -254,9 +254,10 @@ public class GameCanvas extends Canvas{
 			g2d.drawString((i%2 == 0 ? p1name : p2name) + " to play.", 650, 256);
 			break;
 		case GAME_WON:case GAME_TIE:
-			g2d.drawString("Results:", 200, 560);
+			g2d.drawString("Results:", 200, 540);
+			g2d.drawString("Enter to restart. Escape to quit.", 270, 560);
 			g2d.setColor(status_color);
-			g2d.drawString(information, 250, 560);
+			g2d.drawString(information, 250, 540);
 			break;
 		}
 		g2d.setColor(P1_COLOR);
@@ -298,6 +299,7 @@ public class GameCanvas extends Canvas{
 	 */
 	public void gameoff() {
 		mode = MENU_MODE;
+		status = GAME_IN_PROGRESS;
 		repaint();
 	}
 	

@@ -8,6 +8,8 @@ public class HumanPlayer extends Player {
 	
 	@Override
 	public Location getChoice() {
+		
+		//	Only accept user input that is a viable move
 		Location l = null;
 		do {
 			l = getMouseInput();
