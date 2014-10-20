@@ -12,8 +12,6 @@ import Players.*;
  * The PolarTTT class 
  */
 public class PolarTTT extends KeyAdapter{
-
-	public final static char EMPTY = '.', PLAYER1 = 'X', PLAYER2 = 'O';
 	
 	/**
 	 * Constructs a new Polar Tic-Tac-Toe game.
@@ -96,6 +94,7 @@ public class PolarTTT extends KeyAdapter{
 	public char peak(int radius, int theta) {
 		return board[radius][theta];
 	}
+	
 	/**
 	 * Query the player for its name
 	 * @param player The player number to check
@@ -111,6 +110,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @return Whether to allow that play
 	 */
 	public boolean moveIsAvailable(Location location) {
+		
 		//	Anywhere is legal on first turn
 		if (turn == 0) {
 			return true;
@@ -123,8 +123,9 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	Check all adjacent locations
 		for (int i = location.r - 1; i < location.r + 2; i++) {
+			
+			//	Ignore invalid locations
 			if (-1 < i && i < 5) {
-
 				for (int j = -1; j < 2; j++) {
 					int k = (location.t + j + 12) % 12;
 					
@@ -137,6 +138,7 @@ public class PolarTTT extends KeyAdapter{
 		}
 		return false;
 	}
+	
 	/**
 	 * Gets all available locations this turn, which must be adjacent to previous plays except in the first turn when all locations are available.
 	 * @return The list of available locations
@@ -159,18 +161,21 @@ public class PolarTTT extends KeyAdapter{
 		//	Remove the null values so the size is the number of actual locations
 		locations.removeAll(Collections.singleton(null));
 		if (locations.size() == 0) {
-			canvas.setStatus(GameCanvas.GAME_TIE, turn, "No available moves!");
+			canvas.setStatus(GameCanvas.STATUS_TIE, turn, "No available moves!");
 			System.exit(0);
 		}
 		return locations;
 	}
+	
 	/**
 	 * Starts the game from scratch
 	 */
 	public void begin() {
 		synchronized (frame) {
+			
 			//	Game loop!
 			while (true) {
+				
 				//	Reset everything
 				turn = 0;
 				players[0] = players[1] = null;
@@ -208,6 +213,8 @@ public class PolarTTT extends KeyAdapter{
 				
 				//	Ask player 1 to make a move
 				invokePlayerMove();
+				
+				//	Keep restarting the game until exit
 				try {
 					frame.wait();
 				} catch (InterruptedException e) {
@@ -216,43 +223,55 @@ public class PolarTTT extends KeyAdapter{
 		}
 
 	}
+	
 	/**
 	 * Requests the players' movements in sequence.
 	 */
 	private void invokePlayerMove() {
+		//	Instantiate outside of the while scope
 		Location choice;
 		while (turn < 60) {
+			
+			//	Start a player's new round
 			Player p = players[turn % 2];
 			p.newRound();
 			
-/*			ArrayList<Location> locs = allAvailableLocations();
+			/*
+			//	Print out the list of every location (helpful when debugging)
+			ArrayList<Location> locs = allAvailableLocations();
 			
 			for (Location l : locs) {
 				System.out.print("(" + l.r + "," + l.t + "), ");
 			}
-			System.out.println();*/
+			System.out.println();
+ 			*/
 			
+			//	Get the player's move
 			choice = p.getChoice();
 			if (!choose(choice)){
 				gameon = false;
-				canvas.setStatus(GameCanvas.GAME_WON, turn, p.getName() + " made an illegal move and lost the game!\n");
+				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " made an illegal move and lost the game!\n");
 				return;
 			}
 			if (checkWin(choice)) {
 				gameon = false;
-				canvas.setStatus(GameCanvas.GAME_WON, turn, p.getName() + " got 4 in a row and won the game!\n");
+				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " got 4 in a row and won the game!\n");
 				return;
 			}
 		}
+		
+		//	Cat's game!
 		gameon = false;
-		canvas.setStatus(GameCanvas.GAME_TIE, turn, players[1].getName() + " made the last move and tied the game!\n");
+		canvas.setStatus(GameCanvas.STATUS_TIE, turn, players[1].getName() + " made the last move and tied the game!\n");
 	}
+	
 	/**
 	 * Makes a move
 	 * @param location The location to move
 	 * @return Whether the move was allowed
 	 */
 	private boolean choose (Location location) {
+		
 		//	If we're allowed to play here, play here
 		if (moveIsAvailable(location)) {
 			
@@ -272,23 +291,27 @@ public class PolarTTT extends KeyAdapter{
 		
 		return false;
 	}
+	
 	/**
 	 * Determines if the current state is a winning one
 	 * @param location The location of the last play
 	 * @return Whether the game has ended
 	 */
 	private boolean checkWin(Location location) {
+		
 		//	It's impossible to win in the first 6 turns
 		if (turn < 6) {
 			return false;
 		}
 		
+		//	See which move was made
 		char player = peak(location);
 		
 		//	Check all the win conditions
 		return checkSpokesWin(player, location) || checkRingWin(player, location)
 			|| checkClockwiseWin(player, location) || checkCounterClockwiseWin(player, location);
 	}
+	
 	/**
 	 * Checks to see if a single player has at least four in a row along a spoke
 	 * @param player The player to test with
@@ -318,6 +341,7 @@ public class PolarTTT extends KeyAdapter{
 		//	Show if it is at least 4 in a row
 		return 3 < count;
 	}
+	
 	/**
 	 * Checks to see if a single player has at least four in a row along a ring
 	 * @param player
@@ -344,6 +368,7 @@ public class PolarTTT extends KeyAdapter{
 		//	Show if it is at least 4 in a row
 		return 3 < count;
 	}
+	
 	/**
 	 * Checks to see if a single player has at least four in a row around the ring
 	 * @param player
@@ -371,6 +396,7 @@ public class PolarTTT extends KeyAdapter{
 		//	Show if it is at least 4 in a row
 		return 3 < count;
 	}
+	
 	/**
 	 * Checks to see if a single player has at least four in a row around the ring
 	 * @param player
@@ -383,7 +409,7 @@ public class PolarTTT extends KeyAdapter{
 		int count = 0;
 		
 		//	Find the closest in point in the spiral
-		while (furthest.r > 0 && board[furthest.r - 1][(furthest.t + 13) % 12] == player){
+		while (furthest.r > 0 && board[furthest.r - 1][(furthest.t + 11) % 12] == player){
 			furthest.r--;
 			furthest.t = (furthest.t + 11) % 12;	//	Wrapping decrement
 		}
@@ -398,6 +424,7 @@ public class PolarTTT extends KeyAdapter{
 		//	Show if it is at least 4 in a row
 		return 3 < count;
 	}
+	
 	@Override
 	public void keyPressed(KeyEvent e) {
 		switch (e.getKeyCode()){
@@ -426,7 +453,7 @@ public class PolarTTT extends KeyAdapter{
 		case KeyEvent.VK_ENTER:
 			
 			//	This overwrites players so make sure the mode is right
-			if (canvas.getMode() == GameCanvas.MENU_MODE){
+			if (canvas.getMode() == GameCanvas.MODE_MENU){
 										
 				//	Assign each player from the provided menu selections
 				for (int i = 0; i < 2; i++) {
@@ -461,12 +488,15 @@ public class PolarTTT extends KeyAdapter{
 				}
 			}
 			break;
+		
+		//	Allow keyboard shortcut to close
 		case KeyEvent.VK_ESCAPE:
 			System.exit(0);
 			break;
 		}
 	}
 
+	public final static char EMPTY = '.', PLAYER1 = 'X', PLAYER2 = 'O';
 	private GameCanvas canvas;
 	private Frame frame;	
 	private char[][] board;

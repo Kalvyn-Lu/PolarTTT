@@ -26,8 +26,6 @@ public class GameCanvas extends Canvas{
 		}
 		
 		//	Set up the canvas for display
-		this.width = width;
-		this.height = height;
 		setBackground(BACKGROUND_COLOR);
 		setSize(width, height);
 		
@@ -42,17 +40,18 @@ public class GameCanvas extends Canvas{
 			public void mouseClicked(MouseEvent e) {
 				
 				//	Don't allow mouse events if the game hasn't started
-				if (mode == MENU_MODE) {
+				if (mode == MODE_MENU) {
 					return;
 				}
 				
+				//	The XY coordinates relative to the game window's top left corner
 				Point p = e.getPoint();
 				
-				//	Get the location of the mouse relative to the center of the board
+				//	Adjust to the origin
 				int x = p.x - origin_x, y = p.y - origin_y;
 				
 				//	Get the radius in pixels
-				int r = (int) Math.sqrt(x * x + y * y);
+				double r = Math.sqrt(x * x + y * y);
 				
 				//	Assume we're on the farthest out loop first
 				mouse_radius = 4;
@@ -62,7 +61,9 @@ public class GameCanvas extends Canvas{
 					
 					//	If it is within the circle, it's in!
 					//	If it's in a ring, it is in this circle but not the previous
-					if (r < RADIUS_UNIT * (i + 1.5)){
+					//		Note 1.5- this is because we adjust by 1 (can't pick 0th ring)
+					//		and .5 (to give margins to the rings)
+					if (r < RADIUS_UNIT * ((double)i + 1.5)){
 						mouse_radius = i;
 						break;
 					}
@@ -93,7 +94,9 @@ public class GameCanvas extends Canvas{
 				
 				//	Do the same trick with the rings only this time for spokes
 				for (int i = 0; i < 4; i++) {
-					if (theta < THETA_UNIT * ((double)i + .5)) {
+					
+					//	Unlike before, 0th spoke is allowed, so 0.5 is fine.
+					if (theta < THETA_UNIT * ((double)i + 0.5)) {
 						mouse_theta = (i + start) % 12;	//	Keep it wrapped aroud
 						break;
 					}
@@ -104,29 +107,39 @@ public class GameCanvas extends Canvas{
 			}
 		});
 	}
+	
+	/**
+	 * Passes mouse input to the game. This nightmare is because Eclipse wants game
+	 * to be final if used inside of the listener.
+	 */
 	private void receiveMouseInput(){
 		game.receiveMouseInput(mouse_radius, mouse_theta);
 	}
+	
 	/**
 	 * Handles the down arrow
 	 */
 	public void movedown(){
+		
 		//	If we can move down, move down
 		if (menu_selected < menu_indices.length - 1) {
 			menu_selected++;
 			repaint();
 		}
 	}
+	
 	/**
 	 * Handles the up arrow
 	 */
 	public void moveup() {
+		
 		//	If we can move up, move up
 		if (0 < menu_selected){
 			menu_selected--;
 			repaint();
 		}
 	}
+	
 	/**
 	 * Handles right arrow
 	 */
@@ -137,6 +150,7 @@ public class GameCanvas extends Canvas{
 			repaint();
 		}
 	}
+	
 	/**
 	 * Handles the left arrow
 	 */
@@ -147,23 +161,29 @@ public class GameCanvas extends Canvas{
 			repaint();
 		}
 	}
+	
 	@Override
 	public void paint(Graphics g){
+		
+		//	We're painting in 3D
+		Graphics2D g2d = (Graphics2D)g;
+		
 		//	Pick runtime which to draw
 		switch (mode){
-		case MENU_MODE:
-			mpaint(g);
+		case MODE_MENU:
+			paintMenu(g2d);
 			break;
-		case GAME_MODE:
-			gpaint(g);
+		case MODE_GAME:
+			paintGame(g2d);
 			break;
 		}
 	}
 	
-	private void mpaint(Graphics g) {
-		//	We're drawing in 2D
-		Graphics2D g2d = (Graphics2D)g;
-		
+	/**
+	 * Paints the menu
+	 * @param g2d The Graphics
+	 */
+	private void paintMenu(Graphics2D g2d) {
 		//	Draw the highlights first
 		g2d.setColor(Color.BLUE);
 		for (int i = 0; i < menu_indices.length; i++) {
@@ -186,10 +206,12 @@ public class GameCanvas extends Canvas{
 		}
 	}
 	
-	private void gpaint(Graphics g){ 
+	/**
+	 * Paints the game
+	 * @param g2d
+	 */
+	private void paintGame(Graphics2D g2d){ 
 		//	Prepare to draw
-		Graphics2D g2d = (Graphics2D)g;
-		g2d.clearRect(0, 0, width, height);
 		g2d.setColor(FOREGROUND_COLOR);
 		
 		//	Draw the game board's circles
@@ -254,12 +276,12 @@ public class GameCanvas extends Canvas{
 			p2name = game.getPlayerName(1);
 		
 		switch (status) {
-		case GAME_IN_PROGRESS:
+		case STATUS_IN_PROGRESS:
 			g2d.drawString("Turn Number: " + (1 + i), 675, 224);
 			g2d.setColor(i%2 == 0 ? P1_COLOR : P2_COLOR);
 			g2d.drawString((i%2 == 0 ? p1name : p2name) + " to play.", 650, 256);
 			break;
-		case GAME_WON:case GAME_TIE:
+		case STATUS_WON:case STATUS_TIE:
 			g2d.drawString("Results:", 200, 540);
 			g2d.drawString("Enter to restart. Escape to quit.", 270, 560);
 			g2d.setColor(status_color);
@@ -272,6 +294,7 @@ public class GameCanvas extends Canvas{
 		g2d.drawString(p2name, 660, 176);
 		
 	}
+	
 	/**
 	 * Finds the pixel's x location on the screen
 	 * @param radius
@@ -281,7 +304,7 @@ public class GameCanvas extends Canvas{
 	private int getXPixelFromLocation(int radius, int theta) {
 		return origin_x - SYMBOL_WIDTH/2 + (int)(Math.floor(((1 + radius) * RADIUS_UNIT) * Math.cos(THETACONVERSION[theta])));
 	}
-
+	
 	/**
 	 * Finds the pixel's y location on the screen
 	 * @param radius
@@ -296,7 +319,7 @@ public class GameCanvas extends Canvas{
 	 * Set the game to the play board
 	 */
 	public void gameon() {
-		mode = GAME_MODE;
+		mode = MODE_GAME;
 		repaint();
 	}
 
@@ -304,8 +327,8 @@ public class GameCanvas extends Canvas{
 	 * Set the game to the menu
 	 */
 	public void gameoff() {
-		mode = MENU_MODE;
-		status = GAME_IN_PROGRESS;
+		mode = MODE_MENU;
+		status = STATUS_IN_PROGRESS;
 		repaint();
 	}
 	
@@ -316,13 +339,29 @@ public class GameCanvas extends Canvas{
 	public int getMode() {
 		return mode;
 	}
+	/**
+	 * Sets the status of the game (often to end it).
+	 * @param status The mode to set this by
+	 * @param turn The turn in which the status was set
+	 * @param message The message to display
+	 */
 	public void setStatus(int status, int turn, String message) {
+		if (status != STATUS_IN_PROGRESS && status != STATUS_WON && status != STATUS_TIE){
+			throw new RuntimeException("Invalid status- must be a STATUS_ mode");
+		}
+		
+		//	Save the main data
 		this.status = status;
 		information = message;
+		
+		//	Fix an off-by-one error that occurs mid-move.
 		turn--;
+		
+		//	The color is the player's turn it happened- not necessarily affiliated.
 		this.status_color = turn % 2 == 0 ? P1_COLOR : P2_COLOR;
 	}
-	//	Because Eclipse is lame
+	
+	//	Because Eclipse said to make this
 	private static final long serialVersionUID = 1L;
 	
 	//	The angles at which a spoke will be pointing
@@ -338,13 +377,13 @@ public class GameCanvas extends Canvas{
 	private final int SYMBOL_WIDTH = 16, SYMBOL_HEIGHT = 16;
 	
 	//	The color presets
-	private final Color BACKGROUND_COLOR = Color.BLACK,
-		FOREGROUND_COLOR = new Color(200, 200, 200),
-		P1_COLOR = new Color(255, 31, 0),
-		P2_COLOR = new Color(31, 128, 255);
+	private final Color BACKGROUND_COLOR = Color.BLACK,	//	Black
+		FOREGROUND_COLOR = new Color(200, 200, 200),	//	White
+		P1_COLOR = new Color(255, 31, 0),				//	Red
+		P2_COLOR = new Color(31, 128, 255);				//	Blue
 	
 	//	Integers to be used in calculations
-	private int origin_x, origin_y, width, height, mouse_radius = -1, mouse_theta = -1;
+	private int origin_x, origin_y, mouse_radius = -1, mouse_theta = -1;
 	
 	//	Menu handlers
 	private int menu_selected;
@@ -360,14 +399,14 @@ public class GameCanvas extends Canvas{
 	
 	//	Modes determine which game is to be played
 	private int mode;
-	public static final int MENU_MODE = 0;
-	public static final int GAME_MODE = 1;
+	public static final int MODE_MENU = 0;
+	public static final int MODE_GAME = 1;
 	
 	//	Use this information to display end conditions
 	private int status;
 	private String information;
 	private Color status_color;
-	public static final int GAME_IN_PROGRESS = 0;
-	public static final int GAME_WON = 1;
-	public static final int GAME_TIE = 2;
+	public static final int STATUS_IN_PROGRESS = 0;
+	public static final int STATUS_WON = 1;
+	public static final int STATUS_TIE = 2;
 }
