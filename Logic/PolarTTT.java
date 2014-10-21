@@ -2,8 +2,6 @@ package Logic;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.Collections;
 
 import Players.*;
 
@@ -33,12 +31,35 @@ public class PolarTTT extends KeyAdapter{
 			}
 		});
 		
+		/*
+		 * There is a bug in Java where clicking outside of the window does not cause
+		 * the focusLost event to fire until you click inside. That event is fired, and
+		 * then the focusGained event doesn't fire until you click out and back in again.
+		 * 
+		 * phreak from Stack Overflow proposed a solution:
+		 * http://stackoverflow.com/questions/5150964/java-keylistener-does-not-listen-after-regaining-focus
+		 * 
+		 * This solution fixes the focus issue but causes Windows users to get a flashy
+		 * window. But hey- a flashy window is better than a window that doesn't work.
+		 */
+		frame.addFocusListener(new FocusListener(){
+			
+			//	Do nothing
+            public void focusGained(FocusEvent e){}
+            
+            //	Request focus
+            public void focusLost(FocusEvent e){
+                e.getComponent().requestFocus();
+            }
+        });
+		
 		//	Allow the keyboard input to be run
 		frame.addKeyListener(this);
 			
 		//	Some new arrays need to be made
 		players = new Player[2];
 		board = new char[5][12];
+		available_locations = new boolean[5][12];
 		history = new Location[60];
 		turn = 0;
 		gameon = true;
@@ -101,6 +122,9 @@ public class PolarTTT extends KeyAdapter{
 	 * @return The name of that player
 	 */
 	public String getPlayerName(int player) {
+		if (player != 0 && player != 1){
+			throw new RuntimeException("Players may only be 0 and 1");
+		}
 		return players[player].getName();
 	}
 	
@@ -110,61 +134,84 @@ public class PolarTTT extends KeyAdapter{
 	 * @return Whether to allow that play
 	 */
 	public boolean moveIsAvailable(Location location) {
+		return available_locations[location.r][location.t];
+	}
+	
+	/**
+	 * Determines updates the available_locations and available_locations_l arrays to match the game state
+	 */
+	private void findAvailableMoves(){
 		
-		//	Anywhere is legal on first turn
-		if (turn == 0) {
-			return true;
+		//	Track how many are available
+		int count = 0;
+		
+		//	Check every spot
+		for (int i = 0; i < 5; i++){
+			for (int j = 0; j < 12; j++){
+
+				//	Anywhere is legal on first turn
+				if (turn == 0) {
+					available_locations[i][j] = true;
+				}
+				
+				//	If the spot is taken then it's not available
+				else if (board[i][j] != '.'){
+					available_locations[i][j] = false;
+				}
+				
+				
+				//	Spot is available if it has an adjacent taken
+				else {
+					available_locations[i][j] = hasAdjacent(i, j);
+				}
+				
+				//	Keep count
+				if (available_locations[i][j]) {
+					count++;
+				}
+			}
 		}
 		
-		//	If it's already taken, we can't go there
-		if (peak(location) != '.'){
-			return false;
+		if (count == 0) {
+			available_locations_l = null;
 		}
+		else {
+			available_locations_l = new Location[count];
+			for (int r = 0; r < 5; r++){
+				for (int t = 0; t < 12; t++){
+					if (available_locations[r][t]){
+						available_locations_l[--count] = new Location(r, t);
+					}
+				}
+			}
+		}
+	}
+	
+	public Location[] allAvailableLocations(){
 		
-		//	Check all adjacent locations
-		for (int i = location.r - 1; i < location.r + 2; i++) {
-			
-			//	Ignore invalid locations
-			if (-1 < i && i < 5) {
-				for (int j = -1; j < 2; j++) {
-					int k = (location.t + j + 12) % 12;
-					
-					//	If one of the adjacent locations is occupied, the space is available
-					if (i != k && peak(i, k) != EMPTY) {
+		//	It's fine to do this because the boolean array is used for logic;
+		//	if the player tampers with this array, it won't affect the game.
+		return available_locations_l;
+	}
+	
+	/**
+	 * Determines if a location is adjacent to a space that a player picked.
+	 * @param r The ring
+	 * @param t The spoke
+	 * @return Whether there is any adjacent taken location
+	 */
+	private boolean hasAdjacent(int r, int t){
+		for (int i = r - 1; i < r + 2; i++){
+			if (-1 < i && i < 5){
+				for (int j = -1; j < 2; j++){
+					int k = (t + j + 12) % 12;
+					if ( (r != i || t != k) && board[i][k] != EMPTY){
 						return true;
 					}
 				}
 			}
 		}
 		return false;
-	}
-	
-	/**
-	 * Gets all available locations this turn, which must be adjacent to previous plays except in the first turn when all locations are available.
-	 * @return The list of available locations
-	 */
-	public ArrayList<Location> allAvailableLocations() {
-		//	We'll need at most 60 locations
-		ArrayList<Location> locations = new ArrayList<Location>(60);
-		
-		//	Check all of them one by one
-		for (int i = 0; i < 5; i++) {
-			for (int j = 0; j < 12; j++) {
-				Location l = new Location(i, j);
-				
-				//	Only save it if it's available
-				if (moveIsAvailable(l)) {
-					locations.add(l);
-				}
-			}
-		}
-		//	Remove the null values so the size is the number of actual locations
-		locations.removeAll(Collections.singleton(null));
-		if (locations.size() == 0) {
-			canvas.setStatus(GameCanvas.STATUS_TIE, turn, "No available moves!");
-			System.exit(0);
-		}
-		return locations;
 	}
 	
 	/**
@@ -231,6 +278,13 @@ public class PolarTTT extends KeyAdapter{
 		//	Instantiate outside of the while scope
 		Location choice;
 		while (turn < 60) {
+			
+			//	Reset available moves
+			findAvailableMoves();
+			
+			if (available_locations_l == null){
+				throw new RuntimeException("Out of moves prematurely!");
+			}
 			
 			//	Start a player's new round
 			Player p = players[turn % 2];
@@ -498,10 +552,12 @@ public class PolarTTT extends KeyAdapter{
 
 	public final static char EMPTY = '.', PLAYER1 = 'X', PLAYER2 = 'O';
 	private GameCanvas canvas;
-	private Frame frame;	
+	private Frame frame;
 	private char[][] board;
 	private Player[] players;
 	private Location[] history;
+	private Location[] available_locations_l;
+	private boolean[][] available_locations;
 	private int turn;
 	private boolean gameon;
 }
