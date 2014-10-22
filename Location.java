@@ -1,3 +1,4 @@
+package Source;
 /**
  * @author Anthony
  * This class handles grid locations.
