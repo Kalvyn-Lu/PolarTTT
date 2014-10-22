@@ -1,4 +1,5 @@
-package Source;
+package Logic;
+
 /**
  * @author Anthony
  * This class handles grid locations.
