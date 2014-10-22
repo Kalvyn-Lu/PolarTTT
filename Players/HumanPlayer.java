@@ -3,7 +3,11 @@ package Players;
 import Logic.*;
 
 public class HumanPlayer extends Player {
+	/**
+	 * Constructs a human player
+	 */
 	public HumanPlayer() {
+		super();
 	}
 	
 	@Override
