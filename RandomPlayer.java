@@ -1,8 +1,4 @@
-package Players;
-
 import java.util.Random;
-
-import Logic.*;
 
 /**
  * Makes a random available move.

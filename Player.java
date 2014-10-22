@@ -1,7 +1,3 @@
-package Players;
-
-import Logic.*;
-
 public abstract class Player {
 	public PolarTTT game;
 	private boolean mousereceived;

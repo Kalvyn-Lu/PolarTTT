@@ -1,9 +1,5 @@
-package Logic;
-
 import java.awt.*;
 import java.awt.event.*;
-
-import Players.*;
 
 /**
  * @author Anthony

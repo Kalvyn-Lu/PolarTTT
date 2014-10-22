@@ -1,5 +1,3 @@
-package Logic;
-
 /**
  * @author Anthony
  * This class handles grid locations.

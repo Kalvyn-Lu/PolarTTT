@@ -1,7 +1,3 @@
-package Players;
-
-import Logic.*;
-
 public class HumanPlayer extends Player {
 	public HumanPlayer() {
 	}
