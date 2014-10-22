@@ -31,18 +31,12 @@ public class Location {
 					
 					//	Don't add the same as this one
 					if (i != r || j != 0) {
-						System.out.println(i + ", " + (j + t + 12) % 12);
 						locations[count++] = new Location(i, (j + t + 12) % 12);
 					}
 				}
 			}
 		}
-		
-		//	This shouldn't happen
-		if (count != locations.length){
-			throw new RuntimeException("Neighbors not found!");
-		}
-		
+				
 		//	Return the new list
 		return locations;
 	}

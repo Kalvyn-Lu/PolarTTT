@@ -30,7 +30,7 @@ public class GameCanvas extends Canvas{
 		setSize(width, height);
 		
 		//	Set up the center of the circle
-		origin_x = (int)RADIUS_UNIT * 6;
+		origin_x = (int)RADIUS_UNIT * 5;
 		origin_y = height/2;
 		
 		//	Allow mouse input
@@ -222,18 +222,24 @@ public class GameCanvas extends Canvas{
 		}
 		
 		//	Draw the game board's spokes
-		g2d.drawLine(getXPixelFromLocation(4, 0) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 0) + SYMBOL_HEIGHT/2,getXPixelFromLocation(4, 6) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 6) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(4, 1) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 1) + SYMBOL_HEIGHT/2,getXPixelFromLocation(4, 7) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 7) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(4, 2) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 2) + SYMBOL_HEIGHT/2,getXPixelFromLocation(4, 8) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 8) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(4, 3) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 3) + SYMBOL_HEIGHT/2,getXPixelFromLocation(4, 9) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 9) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(4, 4) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 4) + SYMBOL_HEIGHT/2,getXPixelFromLocation(4, 10) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 10) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(4, 5) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 5) + SYMBOL_HEIGHT/2,getXPixelFromLocation(4, 11) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 11) + SYMBOL_HEIGHT/2);
+		g2d.drawLine(getXPixelFromLocation(3, 0) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 0) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 6) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 6) + SYMBOL_HEIGHT/2);
+		g2d.drawLine(getXPixelFromLocation(3, 1) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 1) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 7) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 7) + SYMBOL_HEIGHT/2);
+		g2d.drawLine(getXPixelFromLocation(3, 2) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 2) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 8) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 8) + SYMBOL_HEIGHT/2);
+		g2d.drawLine(getXPixelFromLocation(3, 3) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 3) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 9) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 9) + SYMBOL_HEIGHT/2);
+		g2d.drawLine(getXPixelFromLocation(3, 4) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 4) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 10) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 10) + SYMBOL_HEIGHT/2);
+		g2d.drawLine(getXPixelFromLocation(3, 5) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 5) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 11) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 11) + SYMBOL_HEIGHT/2);
 		
 		//	Draw the plays
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 12; j++) {
 				char at = game.peak(i, j);
-				if (at != PolarTTT.EMPTY) {
+				if (at == PolarTTT.EMPTY) {
+					if (game.moveIsAvailable(new Location(i, j))){
+						g2d.setColor(NEUTRAL_COLOR);
+						g2d.drawOval(getXPixelFromLocation(i, j), getYPixelFromLocation(i, j), SYMBOL_WIDTH, SYMBOL_HEIGHT);
+					}
+				}
+				else {
 					g2d.setColor(at == PolarTTT.PLAYER1 ? P1_COLOR : P2_COLOR);
 					g2d.fillOval(getXPixelFromLocation(i, j), getYPixelFromLocation(i, j), SYMBOL_WIDTH, SYMBOL_HEIGHT);
 				}
@@ -242,7 +248,7 @@ public class GameCanvas extends Canvas{
 		
 		//	Prepare to draw the history
 		boolean p1 = true;
-		int xloc1 = (int)RADIUS_UNIT * 12,
+		int xloc1 = (int)RADIUS_UNIT * 10,
 			xloc2 = xloc1 + 64;
 		
 		g2d.setColor(FOREGROUND_COLOR);
@@ -276,6 +282,7 @@ public class GameCanvas extends Canvas{
 		String p1name = game.getPlayerName(0),
 			p2name = game.getPlayerName(1);
 		
+		//	Draw the status since we're still in White font
 		switch (status) {
 		case STATUS_IN_PROGRESS:
 			g2d.drawString("Turn Number: " + (1 + i), 675, 224);
@@ -289,10 +296,11 @@ public class GameCanvas extends Canvas{
 			g2d.drawString(information, 250, 540);
 			break;
 		}
+		
 		g2d.setColor(P1_COLOR);
 		g2d.drawString(p1name, 660, 112);
 		g2d.setColor(P2_COLOR);
-		g2d.drawString(p2name, 660, 176);
+		g2d.drawString(p2name, 660, 160);
 		
 	}
 	
@@ -369,7 +377,7 @@ public class GameCanvas extends Canvas{
 	private final double[] THETACONVERSION = {0., 0.524, 1.047, 1.571, 2.094, 2.618, 3.142, 3.665, 4.189, 4.712, 5.236, 5.760};
 	
 	//	The difference in radius between the rings
-	private final double RADIUS_UNIT = 40.0;
+	private final double RADIUS_UNIT = 50.0;
 	
 	//	The difference in angle between spokes
 	private final static double THETA_UNIT = 0.5253;
@@ -381,21 +389,23 @@ public class GameCanvas extends Canvas{
 	private final Color BACKGROUND_COLOR = Color.BLACK,	//	Black
 		FOREGROUND_COLOR = new Color(200, 200, 200),	//	White
 		P1_COLOR = new Color(255, 31, 0),				//	Red
-		P2_COLOR = new Color(31, 128, 255);				//	Blue
+		P2_COLOR = new Color(31, 128, 255),				//	Blue
+		NEUTRAL_COLOR = new Color(6, 176, 80);			//	Green
 	
 	//	Integers to be used in calculations
 	private int origin_x, origin_y, mouse_radius = -1, mouse_theta = -1;
 	
 	//	Menu handlers
 	private int menu_selected;
-	public  int[] menu_indices;
+	public int[] menu_indices;
 	
 	//	The game this gui interfaces with
 	private PolarTTT game;
 	
 	//	Menues
-	private final String[] Player1Types = {"Human", "Random", "C"};
-	private final String[] Player2Types = {"Human", "Random", "C"};
+	private final String[]
+			Player1Types = {"Human", "Random", "C"},
+			Player2Types = {"Human", "Random", "C"};
 	private String[][] menu = {Player1Types, Player2Types};
 	
 	//	Modes determine which game is to be played

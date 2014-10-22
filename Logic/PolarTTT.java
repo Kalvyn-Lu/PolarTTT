@@ -99,13 +99,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @return The marking
 	 */
 	public char peak(Location location) {
-		try {
 		return board[location.r][location.t];
-		}
-		catch (NullPointerException e){
-			System.out.println(location.r + ", " + location.t);
-		}
-		return EMPTY;
 	}
 	
 	/**
@@ -251,7 +245,6 @@ public class PolarTTT extends KeyAdapter{
 							this.wait();
 						}
 						catch (InterruptedException e) {
-							break;
 						}
 					}
 				}
