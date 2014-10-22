@@ -33,11 +33,7 @@ public class PolarTTT extends KeyAdapter{
 		
 		/*
 		 * There is a bug in Java where clicking outside of the window does not cause
-		 * the focusLost event to fire until you click inside. That event is fired, and
-		 * then the focusGained event doesn't fire until you click out and back in again.
-		 * 
-		 * phreak from Stack Overflow proposed a solution:
-		 * http://stackoverflow.com/questions/5150964/java-keylistener-does-not-listen-after-regaining-focus
+		 * the focusLost event to fire until you click inside.
 		 * 
 		 * This solution fixes the focus issue but causes Windows users to get a flashy
 		 * window. But hey- a flashy window is better than a window that doesn't work.
@@ -58,9 +54,9 @@ public class PolarTTT extends KeyAdapter{
 			
 		//	Some new arrays need to be made
 		players = new Player[2];
-		board = new char[5][12];
-		available_locations = new boolean[5][12];
-		history = new Location[60];
+		board = new char[4][12];
+		available_locations = new boolean[4][12];
+		history = new Location[48];
 		turn = 0;
 		gameon = true;
 	}
@@ -103,7 +99,13 @@ public class PolarTTT extends KeyAdapter{
 	 * @return The marking
 	 */
 	public char peak(Location location) {
+		try {
 		return board[location.r][location.t];
+		}
+		catch (NullPointerException e){
+			System.out.println(location.r + ", " + location.t);
+		}
+		return EMPTY;
 	}
 	
 	/**
@@ -146,7 +148,7 @@ public class PolarTTT extends KeyAdapter{
 		int count = 0;
 		
 		//	Check every spot
-		for (int i = 0; i < 5; i++){
+		for (int i = 0; i < 4; i++){
 			for (int j = 0; j < 12; j++){
 
 				//	Anywhere is legal on first turn
@@ -177,7 +179,7 @@ public class PolarTTT extends KeyAdapter{
 		}
 		else {
 			available_locations_l = new Location[count];
-			for (int r = 0; r < 5; r++){
+			for (int r = 0; r < 4; r++){
 				for (int t = 0; t < 12; t++){
 					if (available_locations[r][t]){
 						available_locations_l[--count] = new Location(r, t);
@@ -201,16 +203,18 @@ public class PolarTTT extends KeyAdapter{
 	 * @return Whether there is any adjacent taken location
 	 */
 	private boolean hasAdjacent(int r, int t){
-		for (int i = r - 1; i < r + 2; i++){
-			if (-1 < i && i < 5){
-				for (int j = -1; j < 2; j++){
-					int k = (t + j + 12) % 12;
-					if ( (r != i || t != k) && board[i][k] != EMPTY){
-						return true;
-					}
-				}
+		
+		//	Get all neighbors
+		Location[] neighbors = new Location(r, t).adjacentLocations();
+		 
+		//	Check all neighbors
+		for (Location location : neighbors){
+			if (peak(location) != EMPTY){
+				return true;
 			}
 		}
+		
+		//	None adjacent
 		return false;
 	}
 	
@@ -226,12 +230,12 @@ public class PolarTTT extends KeyAdapter{
 				//	Reset everything
 				turn = 0;
 				players[0] = players[1] = null;
-				for(int i = 0; i < 5; i++) {
+				for(int i = 0; i < 4; i++) {
 					for (int j = 0; j < 12; j++){
 						board[i][j] = EMPTY;
 					}
 				}
-				for (int i = 0; i < 60; i++) {
+				for (int i = 0; i < 48; i++) {
 					history[i] = null;
 				}
 				
@@ -277,11 +281,12 @@ public class PolarTTT extends KeyAdapter{
 	private void invokePlayerMove() {
 		//	Instantiate outside of the while scope
 		Location choice;
-		while (turn < 60) {
+		while (turn < 48) {
 			
 			//	Reset available moves
 			findAvailableMoves();
 			
+			//	This shouldn't happen.
 			if (available_locations_l == null){
 				throw new RuntimeException("Out of moves prematurely!");
 			}
@@ -377,7 +382,7 @@ public class PolarTTT extends KeyAdapter{
 		int count = 0;
 		
 		//	Find the furthest-out ring in the line
-		while (furthest < 4 && board[furthest + 1][location.t] == player) {
+		while (furthest < 3 && board[furthest + 1][location.t] == player) {
 			furthest++;
 		}
 		
@@ -441,7 +446,7 @@ public class PolarTTT extends KeyAdapter{
 		}
 		
 		//	Find the number in a row spirally
-		while (furthest.r < 5 && peak(furthest) == player) {
+		while (furthest.r < 4 && peak(furthest) == player) {
 			count++;
 			furthest.r++;
 			furthest.t = (furthest.t + 11) % 12;	//	Wrapping decrement
@@ -469,7 +474,7 @@ public class PolarTTT extends KeyAdapter{
 		}
 		
 		//	Find the number in a row spirally
-		while (furthest.r < 5 && peak(furthest) == player) {
+		while (furthest.r < 4 && peak(furthest) == player) {
 			count++;
 			furthest.r++;
 			furthest.t = (furthest.t + 13) % 12;	//	Wrapping increment

@@ -54,10 +54,10 @@ public class GameCanvas extends Canvas{
 				double r = Math.sqrt(x * x + y * y);
 				
 				//	Assume we're on the farthest out loop first
-				mouse_radius = 4;
+				mouse_radius = 3;
 				
 				//	Start from the inside and go out
-				for (int i = 0; i < 4; i++) {
+				for (int i = 0; i < 3; i++) {
 					
 					//	If it is within the circle, it's in!
 					//	If it's in a ring, it is in this circle but not the previous
@@ -215,8 +215,8 @@ public class GameCanvas extends Canvas{
 		g2d.setColor(FOREGROUND_COLOR);
 		
 		//	Draw the game board's circles
-		g2d.fillOval(origin_x, origin_y, 3, 3);
-		for (int r = 0; r < 5; r++) {
+		g2d.fillOval(origin_x - 2, origin_y - 2, 4, 4);
+		for (int r = 0; r < 4; r++) {
 			int offset = (1 + r) * (int)RADIUS_UNIT;
 			g2d.drawOval(origin_x - offset, origin_y - offset , 2 * offset, 2 * offset);
 		}
@@ -230,7 +230,7 @@ public class GameCanvas extends Canvas{
 		g2d.drawLine(getXPixelFromLocation(4, 5) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 5) + SYMBOL_HEIGHT/2,getXPixelFromLocation(4, 11) + SYMBOL_WIDTH/2, getYPixelFromLocation(4, 11) + SYMBOL_HEIGHT/2);
 		
 		//	Draw the plays
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 12; j++) {
 				char at = game.peak(i, j);
 				if (at != PolarTTT.EMPTY) {
@@ -253,8 +253,9 @@ public class GameCanvas extends Canvas{
 		g2d.setColor(P2_COLOR);
 		g2d.drawString("P2 History", xloc2, 64);
 		int i;
+		
 		//	Draw the history
-		for (i = 0; i < 60; i++, p1 = !p1) {
+		for (i = 0; i < 48; i++, p1 = !p1) {
 			Location l = game.getNthMoveMade(i);
 			
 			//	Don't print if no move is made

@@ -1,7 +1,5 @@
 package Logic;
 
-import java.util.ArrayList;
-
 /**
  * @author Anthony
  * This class handles grid locations.
@@ -21,20 +19,31 @@ public class Location {
 	 * Gets the adjacent existing locations to the current one
 	 * @return The adjacent locations
 	 */
-	public ArrayList<Location> adjacentLocations(){
+	public Location[] adjacentLocations(){
 		//	Make a new arraylist
-		ArrayList<Location> locations = new ArrayList<Location>((r == 0 || r == 4) ? 6 : 8);
+		Location[] locations = new Location[((r == 0 || r == 3) ? 5 : 8)];
+		int count = 0;
 		
 		//	Add locations that are in the grid
 		for (int i = r - 1; i < r + 2; i++) {
-			if (-1 < i && i < 5) {
+			if (-1 < i && i < 4){
 				for (int j = -1; j < 2; j++){
-					locations.add(new Location(i, (j + t + 12) % 12));
+					
+					//	Don't add the same as this one
+					if (i != r || j != 0) {
+						System.out.println(i + ", " + (j + t + 12) % 12);
+						locations[count++] = new Location(i, (j + t + 12) % 12);
+					}
 				}
 			}
 		}
 		
-		//	Return that
+		//	This shouldn't happen
+		if (count != locations.length){
+			throw new RuntimeException("Neighbors not found!");
+		}
+		
+		//	Return the new list
 		return locations;
 	}
 }
