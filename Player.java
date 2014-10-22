@@ -1,4 +1,3 @@
-package Source;
 public abstract class Player {
 	public PolarTTT game;
 	private boolean mousereceived;

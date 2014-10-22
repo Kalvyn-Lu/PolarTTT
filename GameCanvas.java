@@ -1,4 +1,3 @@
-package Source;
 import java.awt.*;
 import java.awt.event.*;
 
