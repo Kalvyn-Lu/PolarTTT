@@ -25,7 +25,7 @@ This runner instantiates a PolarTTT object and then runs it.
 PolarTTT.java
 An object instantiated from this class has multiple purposes. It:
 
-1) Manages a GUI with which to interact with the user. It sends the GUI the status of the game and receives mouse input. It is what tracks the keyboard input instead of the GUI.
+1) Manages a GUI with which to interact with the user. It sends the GUI the status of the game and receives mouse input. It is what tracks the keyboard input instead of the GUI. 
 
 2) Handles the game logic. The rules of the game are enforced here. The players can request information about the state of the game, and ultimately are asked to decide where to go each turn. Invalid moves result in a disqualification.
 
@@ -42,3 +42,5 @@ This class abstracts grid locations into a tuple that pairs two values rather th
 
 GameCanvas.java
 This class denotes objects that are the GUI. It draws both the menues and the game states as well as delivering useful and essential information to the user. It contains a mouse listener that will feed into the game the grid location closest to the location of the mouse click. Players can also preview which moves are currently available as well.
+
+Player.java

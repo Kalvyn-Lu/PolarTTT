@@ -3,9 +3,6 @@ package Players;
 import Logic.*;
 
 public abstract class Player {
-	public PolarTTT game;
-	private boolean mousereceived;
-	private Location mouseLocation;
 	/**
 	 * Construct a player
 	 */
@@ -26,7 +23,6 @@ public abstract class Player {
 	public void newGame(PolarTTT game) {
 		//	Sets the game; this can't be done in constructor because of the circular logic problem
 		this.game = game;
-		mousereceived = false;
 	}
 	/**
 	 * Prepare a player for a new turn. Does nothing unless overridden.
@@ -84,5 +80,9 @@ public abstract class Player {
 		//	Now we can return the location of the mouse on the grid
 		return mouseLocation;
 	}
+
+	public PolarTTT game;
+	private boolean mousereceived;
+	private Location mouseLocation;
 }
 

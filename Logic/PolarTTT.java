@@ -117,11 +117,26 @@ public class PolarTTT extends KeyAdapter{
 	 * @param player The player number to check
 	 * @return The name of that player
 	 */
-	public String getPlayerName(int player) {
-		if (player != 0 && player != 1){
-			throw new RuntimeException("Players may only be 0 and 1");
+	public String getPlayerName(char player) {
+		try {
+			return players[getPlayerIndex(player)].getName();
 		}
-		return players[player].getName();
+		catch (ArrayIndexOutOfBoundsException e){
+			return "Unknown Player";
+		}
+	}
+	
+	/**
+	 * Gets the index in the players array of a player
+	 * @param player The player to check
+	 * @return The index of that player in the players array
+	 */
+	public int getPlayerIndex(char player) {
+		return player == PLAYER1 ? 0 : player == PLAYER2 ? 1 : -1;
+	}
+	
+	public char getPlayerSymbol(Player player) {
+		return players[0] == player ? PLAYER1 : players[1] == player ? PLAYER2 : EMPTY;
 	}
 	
 	/**
@@ -183,6 +198,10 @@ public class PolarTTT extends KeyAdapter{
 		}
 	}
 	
+	/**
+	 * Gets all available locations.
+	 * @return An array of all locations that are legal moves
+	 */
 	public Location[] allAvailableLocations(){
 		
 		//	It's fine to do this because the boolean array is used for logic;
@@ -302,19 +321,19 @@ public class PolarTTT extends KeyAdapter{
 			choice = p.getChoice();
 			if (!choose(choice)){
 				gameon = false;
-				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " made an illegal move and lost the game!\n");
+				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) made an illegal move and lost the game!\n");
 				return;
 			}
 			if (checkWin(choice)) {
 				gameon = false;
-				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " got 4 in a row and won the game!\n");
+				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
 				return;
 			}
 		}
 		
 		//	Cat's game!
 		gameon = false;
-		canvas.setStatus(GameCanvas.STATUS_TIE, turn, players[1].getName() + " made the last move and tied the game!\n");
+		canvas.setStatus(GameCanvas.STATUS_TIE, turn, players[1].getName() + " ( " + PLAYER2 + " ) made the last move and tied the game!\n");
 	}
 	
 	/**
@@ -341,6 +360,29 @@ public class PolarTTT extends KeyAdapter{
 			return true;
 		}
 		
+		return false;
+	}
+	
+	private boolean win(char player){
+		if (player != PLAYER1 && player != PLAYER2) {
+			throw new RuntimeException ("Only players 0 and 1 exist");
+		}
+		
+/*
+win(player) -> Exists (ring, spoke) such that:
+At(player, Location(ring,spoke)) ^ (
+(Is(ring, 0) ^ (
+At(player, Location(ring + 1, spoke)) ^ At(player, Location(ring + 2, spoke)) ^ At(player, Location(ring + 3, spoke))
+v At(player, Location(ring + 1, spoke + 1)) ^ At(player, Location(ring + 2, spoke + 2)) ^ At(player, Location(ring + 3, spoke + 3))
+v At(player, Location(ring + 1, spoke - 1)) ^ At(player, Location(ring + 2, spoke - 2)) ^ At(player, Location(ring + 3, spoke - 3))
+)
+v (At(player, Location(ring, spoke + 1) ^ At(player, Location(ring, spoke + 2)) ^ At(player, Location(ring, spoke + 1))))
+
+Unification string is { player/?, ring/?, spoke/? } where each ? is decided at runtime.
+*/
+
+		//	This function will override checkWin but we don't want to break anything [yet]
+		//	so it'll just wait until the next commit so we still have a working one.
 		return false;
 	}
 	

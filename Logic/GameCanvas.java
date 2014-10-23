@@ -222,31 +222,34 @@ public class GameCanvas extends Canvas{
 		}
 		
 		//	Draw the game board's spokes
-		g2d.drawLine(getXPixelFromLocation(3, 0) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 0) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 6) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 6) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(3, 1) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 1) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 7) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 7) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(3, 2) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 2) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 8) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 8) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(3, 3) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 3) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 9) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 9) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(3, 4) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 4) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 10) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 10) + SYMBOL_HEIGHT/2);
-		g2d.drawLine(getXPixelFromLocation(3, 5) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 5) + SYMBOL_HEIGHT/2,getXPixelFromLocation(3, 11) + SYMBOL_WIDTH/2, getYPixelFromLocation(3, 11) + SYMBOL_HEIGHT/2);
+		g2d.drawLine(getXPixelFromLocation(3, 0), getYPixelFromLocation(3, 0),getXPixelFromLocation(3, 6), getYPixelFromLocation(3, 6));
+		g2d.drawLine(getXPixelFromLocation(3, 1), getYPixelFromLocation(3, 1),getXPixelFromLocation(3, 7), getYPixelFromLocation(3, 7));
+		g2d.drawLine(getXPixelFromLocation(3, 2), getYPixelFromLocation(3, 2),getXPixelFromLocation(3, 8), getYPixelFromLocation(3, 8));
+		g2d.drawLine(getXPixelFromLocation(3, 3), getYPixelFromLocation(3, 3),getXPixelFromLocation(3, 9), getYPixelFromLocation(3, 9));
+		g2d.drawLine(getXPixelFromLocation(3, 4), getYPixelFromLocation(3, 4),getXPixelFromLocation(3, 10), getYPixelFromLocation(3, 10));
+		g2d.drawLine(getXPixelFromLocation(3, 5), getYPixelFromLocation(3, 5),getXPixelFromLocation(3, 11), getYPixelFromLocation(3, 11));
 		
 		//	Draw the plays
+		g2d.setFont(new Font("Arial", Font.BOLD, 24));
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 12; j++) {
 				char at = game.peak(i, j);
 				if (at == PolarTTT.EMPTY) {
 					if (game.moveIsAvailable(new Location(i, j))){
 						g2d.setColor(NEUTRAL_COLOR);
-						g2d.drawOval(getXPixelFromLocation(i, j), getYPixelFromLocation(i, j), SYMBOL_WIDTH, SYMBOL_HEIGHT);
+						g2d.drawOval(getXPixelFromLocation(i, j) - SYMBOL_WIDTH/2, getYPixelFromLocation(i, j) - SYMBOL_WIDTH/2, SYMBOL_WIDTH, SYMBOL_HEIGHT);
 					}
 				}
 				else {
 					g2d.setColor(at == PolarTTT.PLAYER1 ? P1_COLOR : P2_COLOR);
-					g2d.fillOval(getXPixelFromLocation(i, j), getYPixelFromLocation(i, j), SYMBOL_WIDTH, SYMBOL_HEIGHT);
+					g2d.drawString("" + at, getXPixelFromLocation(i, j) - SYMBOL_WIDTH/2, getYPixelFromLocation(i, j) + SYMBOL_WIDTH/2);
+					//g2d.fillOval(getXPixelFromLocation(i, j), getYPixelFromLocation(i, j), SYMBOL_WIDTH, SYMBOL_HEIGHT);
 				}
 			}
 		}
 		
 		//	Prepare to draw the history
+		g2d.setFont(new Font("Arial", Font.PLAIN, 12));
 		boolean p1 = true;
 		int xloc1 = (int)RADIUS_UNIT * 10,
 			xloc2 = xloc1 + 64;
@@ -279,8 +282,8 @@ public class GameCanvas extends Canvas{
 		g2d.drawString("Player 1 Name:", 675, 96);
 		g2d.drawString("Player 2 Name:", 675, 144);
 		
-		String p1name = game.getPlayerName(0),
-			p2name = game.getPlayerName(1);
+		String p1name = game.getPlayerName(PolarTTT.PLAYER1),
+			p2name = game.getPlayerName(PolarTTT.PLAYER2);
 		
 		//	Draw the status since we're still in White font
 		switch (status) {
@@ -311,7 +314,7 @@ public class GameCanvas extends Canvas{
 	 * @return The x-coordinate of the pixel
 	 */
 	private int getXPixelFromLocation(int radius, int theta) {
-		return origin_x - SYMBOL_WIDTH/2 + (int)(Math.floor(((1 + radius) * RADIUS_UNIT) * Math.cos(THETACONVERSION[theta])));
+		return origin_x + (int)(Math.floor(((1 + radius) * RADIUS_UNIT) * Math.cos(THETACONVERSION[theta])));
 	}
 	
 	/**
@@ -321,7 +324,7 @@ public class GameCanvas extends Canvas{
 	 * @return The y-coordinate of the pixel
 	 */
 	private int getYPixelFromLocation(int radius, int theta) {
-		return origin_y - SYMBOL_HEIGHT/2 - (int)(Math.floor(((1 + radius) * RADIUS_UNIT) * Math.sin(THETACONVERSION[theta])));
+		return origin_y - (int)(Math.floor(((1 + radius) * RADIUS_UNIT) * Math.sin(THETACONVERSION[theta])));
 	}
 
 	/**
