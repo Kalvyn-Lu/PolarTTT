@@ -12,6 +12,36 @@ import Players.*;
 public class PolarTTT extends KeyAdapter{
 	
 	/**
+	 * How much a winning state matters. This mainly appears in the theoretical test
+	 */
+	public static final int WIN_WEIGHT = 1000000;
+	
+	/**
+	 * How much we care about a spokes win in our fitness function
+	 */
+	public static final int SPOKE_WIN_WEIGHT = 7;
+	
+	/**
+	 * How much we care about a spiral win in our fitness function
+	 */
+	public static final int SPIRAL_WIN_WEIGHT = 7;
+	
+	/**
+	 * How much we care about a rub win in our fitness function
+	 */
+	public static final int RING_WIN_WEIGHT = 7;
+	
+	/**
+	 * Rings can have openings that are potentially longer than 4 in a row. If such exist, how much do we care about the extras?
+	 */
+	public static final int RING_WIN_BEYOND_4 = 2;
+	
+	/**
+	 * How much we care about potential wins where we already have positions owned
+	 */
+	public static final int ALREADY_OWNED_WEIGHT = 5;
+	
+	/**
 	 * Constructs a new Polar Tic-Tac-Toe game.
 	 */
 	public PolarTTT () {
@@ -98,7 +128,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @param location
 	 * @return The marking
 	 */
-	public char peak(Location location) {
+	public char peek(Location location) {
 		return board[location.r][location.t];
 	}
 	
@@ -108,7 +138,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @param theta The spoke to check
 	 * @return The marking
 	 */
-	public char peak(int radius, int theta) {
+	public char peek(int radius, int theta) {
 		return board[radius][theta];
 	}
 	
@@ -222,7 +252,7 @@ public class PolarTTT extends KeyAdapter{
 		 
 		//	Check all neighbors
 		for (Location location : neighbors){
-			if (peak(location) != EMPTY){
+			if (peek(location) != EMPTY){
 				return true;
 			}
 		}
@@ -317,14 +347,16 @@ public class PolarTTT extends KeyAdapter{
 			System.out.println();
  			*/
 			
+		
 			//	Get the player's move
-			choice = p.getChoice();
+			choice = p.getChoice(available_locations_l);
 			if (!choose(choice)){
 				gameon = false;
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) made an illegal move and lost the game!\n");
 				return;
 			}
-			if (checkWin(choice)) {
+			//if (checkWin(choice)) {
+			if (win(getPlayerSymbol(p), choice.r, choice.t)){
 				gameon = false;
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
 				return;
@@ -353,6 +385,10 @@ public class PolarTTT extends KeyAdapter{
 			//	Rotate turn count and thus give other player a turn
 			turn++;
 			
+			//	Evaluate the players' fitnesses;
+			p1fitness = fitness(board, PLAYER1);
+			p2fitness = fitness(board, PLAYER2);
+			
 			//	Redraw the board
 			canvas.repaint();
 			
@@ -363,162 +399,59 @@ public class PolarTTT extends KeyAdapter{
 		return false;
 	}
 	
-	private boolean win(char player){
-		if (player != PLAYER1 && player != PLAYER2) {
-			throw new RuntimeException ("Only players 0 and 1 exist");
-		}
-		
-/*
-win(player) -> Exists (ring, spoke) such that:
-At(player, Location(ring,spoke)) ^ (
-(Is(ring, 0) ^ (
-At(player, Location(ring + 1, spoke)) ^ At(player, Location(ring + 2, spoke)) ^ At(player, Location(ring + 3, spoke))
-v At(player, Location(ring + 1, spoke + 1)) ^ At(player, Location(ring + 2, spoke + 2)) ^ At(player, Location(ring + 3, spoke + 3))
-v At(player, Location(ring + 1, spoke - 1)) ^ At(player, Location(ring + 2, spoke - 2)) ^ At(player, Location(ring + 3, spoke - 3))
-)
-v (At(player, Location(ring, spoke + 1) ^ At(player, Location(ring, spoke + 2)) ^ At(player, Location(ring, spoke + 1))))
-
-Unification string is { player/?, ring/?, spoke/? } where each ? is decided at runtime.
-*/
-
-		//	This function will override checkWin but we don't want to break anything [yet]
-		//	so it'll just wait until the next commit so we still have a working one.
-		return false;
-	}
-	
 	/**
-	 * Determines if the current state is a winning one
-	 * @param location The location of the last play
-	 * @return Whether the game has ended
-	 */
-	private boolean checkWin(Location location) {
-		
-		//	It's impossible to win in the first 6 turns
-		if (turn < 6) {
-			return false;
-		}
-		
-		//	See which move was made
-		char player = peak(location);
-		
-		//	Check all the win conditions
-		return checkSpokesWin(player, location) || checkRingWin(player, location)
-			|| checkClockwiseWin(player, location) || checkCounterClockwiseWin(player, location);
-	}
-	
-	/**
-	 * Checks to see if a single player has at least four in a row along a spoke
-	 * @param player The player to test with
-	 * @param location The location of the last move
-	 * @return Whether the game was won
-	 */
-	private boolean checkSpokesWin(char player, Location location) {
-		int furthest = location.r;
-		int count = 0;
-		
-		//	Find the furthest-out ring in the line
-		while (furthest < 3 && board[furthest + 1][location.t] == player) {
-			furthest++;
-		}
-		
-		//	It's impossible to win if the fourth ring is not reached
-		if (furthest < 3) {
-			return false;
-		}
-		
-		//	Count how many in a row exist
-		while (-1 < furthest && board[furthest][location.t] == player){
-			furthest--;
-			count++;
-		}
-		
-		//	Show if it is at least 4 in a row
-		return 3 < count;
-	}
-	
-	/**
-	 * Checks to see if a single player has at least four in a row along a ring
-	 * @param player
-	 * @param location
-	 * @return Whether the player has won
-	 */
-	private boolean checkRingWin(char player, Location location) {
-		int furthest = location.t;
-		int count = 0;
-		
-		//	Find the furthest out player along the ring
-		//	Due to the size of the board, no ring can be full that
-		//		can cause this to become an infinite loop
-		while (board[location.r][((furthest + 1) + 12) % 12] == player) {
-			furthest = (furthest + 13) % 12;	//	Wrapping increment
-		}
-		
-		//	Count how many around this ring this player owns
-		while (board[location.r][furthest] == player) {
-			furthest = (furthest + 11) % 12;	//	Wrapping decrement
-			count++;
-		}
-		
-		//	Show if it is at least 4 in a row
-		return 3 < count;
-	}
-	
-	/**
-	 * Checks to see if a single player has at least four in a row around the ring
-	 * @param player
-	 * @param location
+	 * Determines if the player has won the game given the location of a move
+	 * @param player The player to check with. This is unnecessary in theory.
+	 * @param ring The ring on which the last play was made
+	 * @param spoke The spoke on which the last play was made
 	 * @return
 	 */
-	private boolean checkClockwiseWin(char player, Location location) {
-		//	Make a copy- don't edit the original
-		Location furthest = new Location(location.r, location.t);
-		int count = 0;
-		
-		//	Find the closest in point in the spiral
-		while (furthest.r > 0 && board[furthest.r - 1][(furthest.t + 13) % 12] == player){
-			furthest.r--;
-			furthest.t = (furthest.t + 13) % 12;	//	Wrapping increment
-		}
-		
-		//	Find the number in a row spirally
-		while (furthest.r < 4 && peak(furthest) == player) {
-			count++;
-			furthest.r++;
-			furthest.t = (furthest.t + 11) % 12;	//	Wrapping decrement
-		}
-		
-		//	Show if it is at least 4 in a row
-		return 3 < count;
+	private boolean win(char player, int ring, int spoke) {
+		return Is(player, At(ring, spoke)) && (
+			(	//	One Spoke win
+				Is(player, Neighbor(0, 0, spoke, 0))
+				&& Is(player, Neighbor(1, 0, spoke, 0))
+				&& Is(player, Neighbor(2, 0, spoke, 0))
+				&& Is(player, Neighbor(3, 0, spoke, 0))
+			) || (	//	One counter-clockwise win
+				Is(player, Neighbor(0, 0, spoke, -ring))
+				&& Is(player, Neighbor(1, 0, spoke, -ring + 1))
+				&& Is(player, Neighbor(2, 0, spoke, -ring + 2))
+				&& Is(player, Neighbor(3, 0, spoke, -ring + 3))
+			) || (	//	One clockwise win
+				Is(player, Neighbor(0, 0, spoke, ring))
+				&& Is(player, Neighbor(1, 0, spoke, ring - 1))
+				&& Is(player, Neighbor(2, 0, spoke, ring - 2))
+				&& Is(player, Neighbor(3, 0, spoke, ring - 3))
+			) || (	//	Ring win *-X-X-X
+				Is(player, Neighbor(ring, 0, spoke, 1))
+				&& Is(player, Neighbor(ring, 0, spoke, 2))
+				&& Is(player, Neighbor(ring, 0, spoke, 3))
+			) || (	//	Ring win X-*-X-X
+				Is(player, Neighbor(ring, 0, spoke, -1))
+				&& Is(player, Neighbor(ring, 0, spoke, 1))
+				&& Is(player, Neighbor(ring, 0, spoke, 2))
+			) || (	//	Ring win X-X-*-X
+				Is(player, Neighbor(ring, 0, spoke, -2))
+				&& Is(player, Neighbor(ring, 0, spoke, -1))
+				&& Is(player, Neighbor(ring, 0, spoke, 1))
+			) || (	//	Ring win X-X-X-*
+				Is(player, Neighbor(ring, 0, spoke, -3))
+				&& Is(player, Neighbor(ring, 0, spoke, -2))
+				&& Is(player, Neighbor(ring, 0, spoke, -1))
+			)
+		);
 	}
-	
-	/**
-	 * Checks to see if a single player has at least four in a row around the ring
-	 * @param player
-	 * @param location
-	 * @return
-	 */
-	private boolean checkCounterClockwiseWin(char player, Location location) {
-		//	Make a copy- don't edit the original
-		Location furthest = new Location(location.r, location.t);
-		int count = 0;
-		
-		//	Find the closest in point in the spiral
-		while (furthest.r > 0 && board[furthest.r - 1][(furthest.t + 11) % 12] == player){
-			furthest.r--;
-			furthest.t = (furthest.t + 11) % 12;	//	Wrapping decrement
-		}
-		
-		//	Find the number in a row spirally
-		while (furthest.r < 4 && peak(furthest) == player) {
-			count++;
-			furthest.r++;
-			furthest.t = (furthest.t + 13) % 12;	//	Wrapping increment
-		}
-		
-		//	Show if it is at least 4 in a row
-		return 3 < count;
+	private char At(int ring, int spoke) {
+		return peek(ring, spoke);
 	}
-	
+	private char Neighbor(int ring, int ring_offset, int spoke, int spoke_offset){
+		return peek(ring + ring_offset, (spoke + spoke_offset + 12) % 12);
+	}
+	private boolean Is(char x, char y) {
+		return x == y;
+	}
+		
 	@Override
 	public void keyPressed(KeyEvent e) {
 		switch (e.getKeyCode()){
@@ -589,6 +522,199 @@ Unification string is { player/?, ring/?, spoke/? } where each ? is decided at r
 			break;
 		}
 	}
+	
+	/**
+	 * Provides a theoretical view of what the board might look like after a potential move is made
+	 * @param loc The location of the theoretical move
+	 * @param player The player who is making this move
+	 * @return The state of the board if that particular move was made
+	 */
+	public char[][] theoreticalMove(Location loc, char player) {
+		
+		//	Make a new theory
+		char[][] theory_with_move = new char[board.length][board[0].length];
+
+		theory_with_move = new char[board.length][board[0].length];
+		for (int r = 0; r < 4; r++) {
+			for (int t = 0; t < 12; t++) {
+				theory_with_move[r][t] = board[r][t];
+			}
+		}
+		
+		//	Make the move
+		theory_with_move[loc.r][loc.t] = player;
+		
+		//	Give the board up
+		return theory_with_move;
+	}
+	
+	/**
+	 * The Fitness Function, which provides a numerical representation of the state of the player
+	 * @param board
+	 * @param player
+	 * @return
+	 */
+	public int fitness (char[][] testboard, char player) {
+		
+		char opponent = EMPTY;
+		
+		//	Find our opponent
+		switch (player) {
+		case PLAYER1:
+			opponent = PLAYER2;
+			break;
+		case PLAYER2:
+			opponent = PLAYER1;
+			break;
+		default:
+			throw new RuntimeException("May only fit a viable player!");
+		}
+		
+		//	Track the fitness; we'll add to it as we go
+		int fitness = 0;
+		
+		//	Start the loops!
+		for (int ring = 0; ring < 4; ring++) {
+			for (int spoke = 0; spoke < 12; spoke++) {
+				
+				//	The player is here; evaluate!
+				if (testboard[ring][spoke] == player) {
+					
+					//	First test is the spokes condition
+					//	Only test spokes that are winnable
+					if (!Is(opponent, Neighbor(0, 0, spoke, 0))
+						&& !Is(opponent, Neighbor(1, 0, spoke, 0))
+						&& !Is(opponent, Neighbor(2, 0, spoke, 0))
+						&& !Is(opponent, Neighbor(3, 0, spoke, 0))) {
+						
+						//	Potential spoke win!
+						fitness += SPOKE_WIN_WEIGHT;
+						
+						//	How much progress do we have?
+						if (Is(player, Neighbor(0, 0, spoke, 0))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(1, 0, spoke, 0))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(2, 0, spoke, 0))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(3, 0, spoke, 0))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						
+					}
+					
+					//	The first of two sprial tests to be run; again don't care about wins we can't make
+					if (!Is(opponent, Neighbor(0, 0, spoke, -ring))
+					&& !Is(opponent, Neighbor(1, 0, spoke, -ring + 1))
+					&& !Is(opponent, Neighbor(2, 0, spoke, -ring + 2))
+					&& !Is(opponent, Neighbor(3, 0, spoke, -ring + 3))) {
+						
+						//	Potential spiral win!
+						fitness += SPIRAL_WIN_WEIGHT;
+						
+						//	How much progress do we have?
+						if (Is(player, Neighbor(0, 0, spoke, -ring))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(1, 0, spoke, -ring + 1))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(2, 0, spoke, -ring + 2))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(3, 0, spoke, -ring + 3))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						
+					}
+					
+					//	Test the other spiral; Use the same method as before
+					if (!Is(opponent, Neighbor(0, 0, spoke, ring))
+					&& !Is(opponent, Neighbor(1, 0, spoke, ring - 1))
+					&& !Is(opponent, Neighbor(2, 0, spoke, ring - 2))
+					&& !Is(opponent, Neighbor(3, 0, spoke, ring - 3))) {
+						fitness += SPIRAL_WIN_WEIGHT;
+						if (Is(player, Neighbor(0, 0, spoke, ring))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(1, 0, spoke, ring - 1))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(2, 0, spoke, ring - 2))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+						if (Is(player, Neighbor(3, 0, spoke, ring - 3))) {
+							fitness += ALREADY_OWNED_WEIGHT;
+						}
+					}
+					
+					//	Now try the ring win
+					//	See how far one can go in a row; stop if an opponent is found
+					//	Test each direction individually
+					int furthest_ccw, furthest_cc, owned = 0;
+					
+					for (furthest_ccw = 0; furthest_ccw < 4; furthest_ccw++) {
+						
+						//	Tally our owned along the way
+						if (Is(player, Neighbor(ring, 0, spoke, furthest_ccw))) {
+							owned++;
+						}
+						
+						//	Break if this is a foe; we can't go past opponent blocks
+						else if (Is(opponent, Neighbor(ring, 0, spoke, furthest_ccw))) {
+							break;
+						}
+					}
+					for (furthest_cc = 0; furthest_cc < 4; furthest_cc++) {
+						
+						if (Is(player, Neighbor(ring, 0, spoke, -furthest_cc))) {
+							owned ++;
+						}
+						else if (Is(opponent, Neighbor(ring, 0, spoke, -furthest_cc))) {
+							break;
+						}
+					}
+					
+					//	See how many in a row we can get total
+					int total = furthest_ccw + furthest_cc;
+					
+					//	Test to see if there is a potential win
+					if (3 < total) {
+						
+						//	There is a potential win!
+						fitness += RING_WIN_WEIGHT
+								
+								//	It's possible to have more than 4 in a row on rings
+								+ RING_WIN_BEYOND_4 * (total - 4)
+								
+								//	See how much we already own
+								+ ALREADY_OWNED_WEIGHT * owned;
+						
+					}
+				}
+				
+				//	TODO: Modify fitness based on opponent's state too?
+			}
+		}
+		
+		
+		
+		return fitness;
+	}
+	
+	public int fitness(char player) {
+		switch (player) {
+		case PLAYER1:
+			return p1fitness;
+		case PLAYER2:
+			return p2fitness;
+		default:
+			throw new RuntimeException("Must select a viable player!");
+		}
+	}
 
 	public final static char EMPTY = '.', PLAYER1 = 'X', PLAYER2 = 'O';
 	private GameCanvas canvas;
@@ -598,6 +724,6 @@ Unification string is { player/?, ring/?, spoke/? } where each ? is decided at r
 	private Location[] history;
 	private Location[] available_locations_l;
 	private boolean[][] available_locations;
-	private int turn;
+	private int turn, p1fitness, p2fitness;
 	private boolean gameon;
 }

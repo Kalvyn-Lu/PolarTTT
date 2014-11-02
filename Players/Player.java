@@ -11,7 +11,7 @@ public abstract class Player {
 	 * It's your turn; make a move
 	 * @return The location to move
 	 */
-	public abstract Location getChoice();
+	public abstract Location getChoice(Location[] options);
 	/**
 	 * Gets the name to be displayed to the GUI of this player
 	 * @return The name
@@ -72,7 +72,6 @@ public abstract class Player {
 				
 				//	This happens when the notify occurs
 				catch (InterruptedException e) {
-					break;
 				}
 			}
 		}

@@ -233,7 +233,7 @@ public class GameCanvas extends Canvas{
 		g2d.setFont(new Font("Arial", Font.BOLD, 24));
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 12; j++) {
-				char at = game.peak(i, j);
+				char at = game.peek(i, j);
 				if (at == PolarTTT.EMPTY) {
 					if (game.moveIsAvailable(new Location(i, j))){
 						g2d.setColor(NEUTRAL_COLOR);
@@ -285,9 +285,18 @@ public class GameCanvas extends Canvas{
 		String p1name = game.getPlayerName(PolarTTT.PLAYER1),
 			p2name = game.getPlayerName(PolarTTT.PLAYER2);
 		
-		//	Draw the status since we're still in White font
+		//	Draw the fitness
+		g2d.drawString("Fitness This Turn:", 650, 270);
+		g2d.setColor(P1_COLOR);
+		g2d.drawString("" + game.fitness(PolarTTT.PLAYER1), 675, 290);
+		g2d.setColor(P2_COLOR);
+		g2d.drawString("" + game.fitness(PolarTTT.PLAYER2), 675, 310);
+
+		//	Draw the status with our foreground
+		g2d.setColor(FOREGROUND_COLOR);
 		switch (status) {
 		case STATUS_IN_PROGRESS:
+			g2d.setColor(FOREGROUND_COLOR);
 			g2d.drawString("Turn Number: " + (1 + i), 675, 224);
 			g2d.setColor(i%2 == 0 ? P1_COLOR : P2_COLOR);
 			g2d.drawString((i%2 == 0 ? p1name : p2name) + " to play.", 650, 256);

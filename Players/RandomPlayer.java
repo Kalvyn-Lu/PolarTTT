@@ -12,21 +12,18 @@ public class RandomPlayer extends Player {
 	}
 	
 	@Override
-	public Location getChoice() {
-		
-		//	See the moves we have available
-		Location[] locs = game.allAvailableLocations();
-		
+	public Location getChoice(Location[] options) {
+				
 		//	Check off-by-one; force the move if only one is allowed
-		if (locs.length == 1) {
-			return locs[0];
+		if (options.length == 1) {
+			return options[0];
 		}
 
 		//	Generate our random seed
 		Random r = new Random();
 		
 		//	Decide the random place to go
-		return locs[r.nextInt(locs.length)];
+		return options[r.nextInt(options.length)];
 	}
 	
 	@Override
