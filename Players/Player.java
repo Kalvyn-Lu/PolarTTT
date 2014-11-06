@@ -72,7 +72,6 @@ public abstract class Player {
 				
 				//	This happens when the notify occurs
 				catch (InterruptedException e) {
-					break;
 				}
 			}
 		}
