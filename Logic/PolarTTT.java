@@ -715,7 +715,262 @@ public class PolarTTT extends KeyAdapter{
 			throw new RuntimeException("Must select a viable player!");
 		}
 	}
+        public int dylanFitness(char[][] board)
+        {
+            String str, str2;
+            int fitness = 0;
+            int ring = 0;
+            int spoke = 0;
+            int diagonal = 0;
+            int p1Counter = 0;
+            int p2Counter = 0;
+            
+            for(spoke = 0; spoke<12; spoke++)//iterating through the spokes
+            {
+                p1Counter = 0;
+                p2Counter = 0;
 
+                str = ""+board[0][spoke]+board[1][spoke]+board[2][spoke]+board[3][spoke]+"";
+                for(int a = 0; a<4; a++)
+                {
+                    if(str.charAt(a) == PLAYER1) p1Counter++;
+                    if(str.charAt(a) == PLAYER2) p2Counter++;
+                }
+                if(p1Counter != 0 && p2Counter != 0){}//both player on this spoke, no possible win
+                else if(p1Counter == 0 && p2Counter ==0){}//neither player on this spoke, trivial
+                else
+                {
+                    fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the spoke
+                }
+            }
+            for(diagonal = 0; diagonal<24; diagonal++)//iterating through the diagonals
+            {
+                p1Counter = 0;
+                p2Counter = 0;
+
+                Location[] locations = dylanDiagonal(diagonal);
+                str = ""+board[locations[0].r][locations[0].t]+
+                        board[locations[1].r][locations[1].t]+
+                        board[locations[2].r][locations[2].t]+
+                        board[locations[3].r][locations[3].t]+"";
+                for(int a = 0; a<4; a++)
+                {
+                    if(str.charAt(a) == PLAYER1) p1Counter++;
+                    if(str.charAt(a) == PLAYER2) p2Counter++;
+                }
+                if(p1Counter != 0 && p2Counter != 0){}//both player on this diagonal, no possible win
+                else if(p1Counter == 0 && p2Counter ==0){}//neither player on this diagonal, trivial
+                else
+                {
+                    fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the diagonal
+                }
+            }
+            for(ring = 0; ring<4; ring++)//iterating through the rings
+            {
+                str = ""+board[ring][0]+
+                        board[ring][1]+
+                        board[ring][2]+
+                        board[ring][3]+
+                        board[ring][4]+
+                        board[ring][5]+
+                        board[ring][6]+
+                        board[ring][7]+
+                        board[ring][8]+
+                        board[ring][9]+
+                        board[ring][10]+
+                        board[ring][11]+"";
+                str2 = ""+board[ring][5]+
+                        board[ring][6]+
+                        board[ring][7]+
+                        board[ring][8]+
+                        board[ring][9]+
+                        board[ring][10]+
+                        board[ring][11]+
+                        board[ring][0]+
+                        board[ring][1]+
+                        board[ring][2]+
+                        board[ring][3]+
+                        board[ring][4]+""; 
+                if(str.contains(".XXX.")) fitness+=100;
+                if(str.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
+                if(str2.contains(".XXX.")) fitness+=100;
+                if(str2.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
+                //this is the only way i could think to account for it, but im not sure how to make it apply to the rest
+                for(int b = 0; b<12; b++)
+                {
+                    p1Counter = 0;
+                    p2Counter = 0;
+                    for(int a = 0; a<4; a++)
+                    {
+                        if(str.charAt((a+b)%12) == PLAYER1) p1Counter++;
+                        if(str.charAt((a+b)%12) == PLAYER2) p2Counter++;
+                    }
+                    if(p1Counter != 0 && p2Counter != 0){}//both player on this ring, no possible win
+                    else if(p1Counter == 0 && p2Counter ==0){}//neither player on this ring, trivial
+                    else
+                    {
+                        fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the ring
+                    }
+                }
+            }
+            return fitness;
+        }
+        public Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
+        {
+            Location[] locations = new Location[4];
+            for(int a = 0; a<4; a++)
+            {
+                locations[a] = new Location(0,0);
+            }
+            switch (diagonal)
+            {
+                case 0:
+                    locations[0] = new Location(0,0);
+                    locations[1] = new Location(1,1);
+                    locations[2] = new Location(2,2);
+                    locations[3] = new Location(3,3);
+                    break;
+                case 1:
+                    locations[0] = new Location(0,1);
+                    locations[1] = new Location(1,2);
+                    locations[2] = new Location(2,3);
+                    locations[3] = new Location(3,4);
+                    break;
+                case 2:
+                    locations[0] = new Location(0,2);
+                    locations[1] = new Location(1,3);
+                    locations[2] = new Location(2,4);
+                    locations[3] = new Location(3,5);
+                    break;
+                case 3:
+                    locations[0] = new Location(0,3);
+                    locations[1] = new Location(1,4);
+                    locations[2] = new Location(2,5);
+                    locations[3] = new Location(3,6);
+                    break;
+                case 4:
+                    locations[0] = new Location(0,4);
+                    locations[1] = new Location(1,5);
+                    locations[2] = new Location(2,6);
+                    locations[3] = new Location(3,7);
+                    break;
+                case 5:
+                    locations[0] = new Location(0,5);
+                    locations[1] = new Location(1,6);
+                    locations[2] = new Location(2,7);
+                    locations[3] = new Location(3,8);
+                    break;
+                case 6:
+                    locations[0] = new Location(0,6);
+                    locations[1] = new Location(1,7);
+                    locations[2] = new Location(2,8);
+                    locations[3] = new Location(3,9);
+                    break;
+                case 7:
+                    locations[0] = new Location(0,7);
+                    locations[1] = new Location(1,8);
+                    locations[2] = new Location(2,9);
+                    locations[3] = new Location(3,10);
+                    break;
+                case 8:
+                    locations[0] = new Location(0,8);
+                    locations[1] = new Location(1,9);
+                    locations[2] = new Location(2,10);
+                    locations[3] = new Location(3,11);
+                    break;
+                case 9:
+                    locations[0] = new Location(0,9);
+                    locations[1] = new Location(1,10);
+                    locations[2] = new Location(2,11);
+                    locations[3] = new Location(3,0);
+                    break;
+                case 10:
+                    locations[0] = new Location(0,10);
+                    locations[1] = new Location(1,11);
+                    locations[2] = new Location(2,0);
+                    locations[3] = new Location(3,1);
+                    break;
+                case 11:
+                    locations[0] = new Location(0,11);
+                    locations[1] = new Location(1,0);
+                    locations[2] = new Location(2,1);
+                    locations[3] = new Location(3,2);
+                    break;
+                case 12:
+                    locations[0] = new Location(0,0);
+                    locations[1] = new Location(1,11);
+                    locations[2] = new Location(2,10);
+                    locations[3] = new Location(3,9);
+                    break;
+                case 13:
+                    locations[0] = new Location(0,1);
+                    locations[1] = new Location(1,0);
+                    locations[2] = new Location(2,11);
+                    locations[3] = new Location(3,10);
+                    break;
+                case 14:
+                    locations[0] = new Location(0,2);
+                    locations[1] = new Location(1,1);
+                    locations[2] = new Location(2,0);
+                    locations[3] = new Location(3,11);
+                    break;
+                case 15:
+                    locations[0] = new Location(0,3);
+                    locations[1] = new Location(1,2);
+                    locations[2] = new Location(2,1);
+                    locations[3] = new Location(3,0);
+                    break;
+                case 16:
+                    locations[0] = new Location(0,4);
+                    locations[1] = new Location(1,3);
+                    locations[2] = new Location(2,2);
+                    locations[3] = new Location(3,1);
+                    break;
+                case 17:
+                    locations[0] = new Location(0,5);
+                    locations[1] = new Location(1,4);
+                    locations[2] = new Location(2,3);
+                    locations[3] = new Location(3,2);
+                    break;
+                case 18:
+                    locations[0] = new Location(0,6);
+                    locations[1] = new Location(1,5);
+                    locations[2] = new Location(2,4);
+                    locations[3] = new Location(3,3);
+                    break;
+                case 19:
+                    locations[0] = new Location(0,7);
+                    locations[1] = new Location(1,6);
+                    locations[2] = new Location(2,5);
+                    locations[3] = new Location(3,4);
+                    break;
+                case 20:
+                    locations[0] = new Location(0,8);
+                    locations[1] = new Location(1,7);
+                    locations[2] = new Location(2,6);
+                    locations[3] = new Location(3,5);
+                    break;
+                case 21:
+                    locations[0] = new Location(0,9);
+                    locations[1] = new Location(1,8);
+                    locations[2] = new Location(2,7);
+                    locations[3] = new Location(3,6);
+                    break;
+                case 22:
+                    locations[0] = new Location(0,10);
+                    locations[1] = new Location(1,9);
+                    locations[2] = new Location(2,8);
+                    locations[3] = new Location(3,7);
+                    break;
+                case 23:
+                    locations[0] = new Location(0,11);
+                    locations[1] = new Location(1,10);
+                    locations[2] = new Location(2,9);
+                    locations[3] = new Location(3,8);
+                    break;                                                                                                                                                
+            }
+            return locations;
+        }
 	public final static char EMPTY = '.', PLAYER1 = 'X', PLAYER2 = 'O';
 	private GameCanvas canvas;
 	private Frame frame;
