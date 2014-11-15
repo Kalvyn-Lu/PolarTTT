@@ -524,7 +524,12 @@ public class PolarTTT extends KeyAdapter{
 					case 1:
 						players[i] = new RandomPlayer();
 						break;
-						
+					
+					//	The greedy player is the third option
+					case 2:
+						players[i] = new GreedyPlayer();
+						break;
+					
 					//	This should only happen during test stage
 					default:
 						System.out.println(canvas.menu_indices[i]);
@@ -582,14 +587,7 @@ public class PolarTTT extends KeyAdapter{
 	}
 	
 	public int fitness(char player) {
-		switch (player) {
-		case PLAYER1:
-			return fitness;
-		case PLAYER2:
-			return -fitness;
-		default:
-			throw new RuntimeException("Must select a viable player!");
-		}
+		return fitness;
 	}
         public int dylanFitness(char[][] board) {
             String str, str2;

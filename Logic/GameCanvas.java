@@ -280,7 +280,7 @@ public class GameCanvas extends Canvas{
 			}
 			
 			g2d.setColor(p1 ? P1_COLOR: P2_COLOR);
-			g2d.drawString("(" + l.r +  ", " + l.t + ")", p1 ? xloc1 : xloc2, 10 * i + 46);
+			g2d.drawString(l.toString(), p1 ? xloc1 : xloc2, 10 * i + 46);
 			
 			int f = game.getNthFitness(i);
 			g2d.setColor(f == 0 ? FOREGROUND_COLOR : f < 0 ? P2_COLOR : P1_COLOR);
@@ -424,8 +424,8 @@ public class GameCanvas extends Canvas{
 	
 	//	Menues
 	private final String[]
-			Player1Types = {"Human", "Random", "C"},
-			Player2Types = {"Human", "Random", "C"},
+			Player1Types = {"Human", "Random", "Greedy"},
+			Player2Types = {"Human", "Random", "Greedy"},
 			FastRun = {"One Game", "Bulk Training"};
 	private String[][] menu = {Player1Types, Player2Types, FastRun};
 	
