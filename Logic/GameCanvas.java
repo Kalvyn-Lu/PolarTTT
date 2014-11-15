@@ -40,7 +40,7 @@ public class GameCanvas extends Canvas{
 			public void mouseClicked(MouseEvent e) {
 				
 				//	Don't allow mouse events if the game hasn't started
-				if (mode == MODE_MENU) {
+				if (mode != MODE_GAME) {
 					return;
 				}
 				
@@ -204,6 +204,10 @@ public class GameCanvas extends Canvas{
 		for (int i = 0; i < menu[1].length; i++) {
 			g2d.drawString(menu[1][i], 25 + 75 * i, 200);
 		}
+		g2d.drawString("Training Menu", 50, 275);
+		for (int i = 0; i < menu[2].length; i++) {
+			g2d.drawString(menu[2][i], 25 + 75 * i, 300);
+		}
 	}
 	
 	/**
@@ -252,15 +256,18 @@ public class GameCanvas extends Canvas{
 		g2d.setFont(new Font("Arial", Font.PLAIN, 12));
 		boolean p1 = true;
 		int xloc1 = (int)RADIUS_UNIT * 10,
-			xloc2 = xloc1 + 64;
+			xloc2 = xloc1 + 36,
+			xloc3 = xloc1 + 68;
 		
 		g2d.setColor(FOREGROUND_COLOR);
-		g2d.drawString("Move History", xloc1 + 24, 48);
+		g2d.drawString("Move History", xloc1 + 24, 18);
 
 		g2d.setColor(P1_COLOR);
-		g2d.drawString("P1 History", xloc1, 64);
+		g2d.drawString("P1", xloc1, 34);
 		g2d.setColor(P2_COLOR);
-		g2d.drawString("P2 History", xloc2, 64);
+		g2d.drawString("P2", xloc2, 34);
+		g2d.setColor(FOREGROUND_COLOR);
+		g2d.drawString("Fitness", xloc3, 34);
 		int i;
 		
 		//	Draw the history
@@ -273,46 +280,43 @@ public class GameCanvas extends Canvas{
 			}
 			
 			g2d.setColor(p1 ? P1_COLOR: P2_COLOR);
-			g2d.drawString("(" + l.r +  ", " + l.t + ")", p1 ? xloc1 : xloc2, 16 * (i/2) + 96);
+			g2d.drawString("(" + l.r +  ", " + l.t + ")", p1 ? xloc1 : xloc2, 10 * i + 46);
+			
+			int f = game.getNthFitness(i);
+			g2d.setColor(f == 0 ? FOREGROUND_COLOR : f < 0 ? P2_COLOR : P1_COLOR);
+			g2d.drawString(" " + f, xloc3 + (p1 ? 0 : 30), 10 * i + 46);
 		}
 		
 		//	Draw the stats
 		g2d.setColor(FOREGROUND_COLOR);
-		g2d.drawString("Game Information", 650, 48);
-		g2d.drawString("Player 1 Name:", 675, 96);
-		g2d.drawString("Player 2 Name:", 675, 144);
+		g2d.drawString("Game Information", 650, 18);
+		g2d.drawString("Player 1 Name:", 675, 66);
+		g2d.drawString("Player 2 Name:", 675, 114);
 		
 		String p1name = game.getPlayerName(PolarTTT.PLAYER1),
 			p2name = game.getPlayerName(PolarTTT.PLAYER2);
-		
-		//	Draw the fitness
-		g2d.drawString("Fitness This Turn:", 650, 270);
-		g2d.setColor(P1_COLOR);
-		g2d.drawString("" + game.fitness(PolarTTT.PLAYER1), 675, 290);
-		g2d.setColor(P2_COLOR);
-		g2d.drawString("" + game.fitness(PolarTTT.PLAYER2), 675, 310);
 
 		//	Draw the status with our foreground
 		g2d.setColor(FOREGROUND_COLOR);
 		switch (status) {
 		case STATUS_IN_PROGRESS:
 			g2d.setColor(FOREGROUND_COLOR);
-			g2d.drawString("Turn Number: " + (1 + i), 675, 224);
+			g2d.drawString("Turn Number: " + (1 + i), 675, 194);
 			g2d.setColor(i%2 == 0 ? P1_COLOR : P2_COLOR);
-			g2d.drawString((i%2 == 0 ? p1name : p2name) + " to play.", 650, 256);
+			g2d.drawString((i%2 == 0 ? p1name : p2name) + " to play.", 650, 226);
 			break;
 		case STATUS_WON:case STATUS_TIE:
 			g2d.drawString("Results:", 200, 540);
-			g2d.drawString("Enter to restart. Escape to quit.", 270, 560);
+			g2d.drawString("Enter to restart. Escape to quit.", 270, 530);
 			g2d.setColor(status_color);
 			g2d.drawString(information, 250, 540);
 			break;
 		}
 		
 		g2d.setColor(P1_COLOR);
-		g2d.drawString(p1name, 660, 112);
+		g2d.drawString(p1name, 660, 82);
 		g2d.setColor(P2_COLOR);
-		g2d.drawString(p2name, 660, 160);
+		g2d.drawString(p2name, 660, 130);
 		
 	}
 	
@@ -351,6 +355,10 @@ public class GameCanvas extends Canvas{
 		mode = MODE_MENU;
 		status = STATUS_IN_PROGRESS;
 		repaint();
+	}
+	
+	public void setInvisible() {
+		mode = MODE_INVISIBLE;
 	}
 	
 	/**
@@ -417,13 +425,15 @@ public class GameCanvas extends Canvas{
 	//	Menues
 	private final String[]
 			Player1Types = {"Human", "Random", "C"},
-			Player2Types = {"Human", "Random", "C"};
-	private String[][] menu = {Player1Types, Player2Types};
+			Player2Types = {"Human", "Random", "C"},
+			FastRun = {"One Game", "Bulk Training"};
+	private String[][] menu = {Player1Types, Player2Types, FastRun};
 	
 	//	Modes determine which game is to be played
 	private int mode;
 	public static final int MODE_MENU = 0;
 	public static final int MODE_GAME = 1;
+	public static final int MODE_INVISIBLE = 2;
 	
 	//	Use this information to display end conditions
 	private int status;

@@ -87,6 +87,7 @@ public class PolarTTT extends KeyAdapter{
 		board = new char[4][12];
 		available_locations = new boolean[4][12];
 		history = new Location[48];
+		fitnesses = new int[48];
 		turn = 0;
 		gameon = true;
 	}
@@ -121,6 +122,17 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	Null indicates no move
 		return null;
+	}
+	/**
+	 * Get the fitness of the board at the given state
+	 * @param n The move number
+	 * @return The fitness during that turn
+	 */
+	public int getNthFitness(int n) {
+		if (-1 < n && n < turn) {
+			return fitnesses[n];
+		}
+		return 0;
 	}
 	
 	/**
@@ -164,7 +176,11 @@ public class PolarTTT extends KeyAdapter{
 	public int getPlayerIndex(char player) {
 		return player == PLAYER1 ? 0 : player == PLAYER2 ? 1 : -1;
 	}
-	
+	/**
+	 * Get the symbol associated with the Player
+	 * @param player The Player object to test with
+	 * @return The player's symbol or PolarTTT.EMPTY if the player isn't in the game
+	 */
 	public char getPlayerSymbol(Player player) {
 		return players[0] == player ? PLAYER1 : players[1] == player ? PLAYER2 : EMPTY;
 	}
@@ -280,11 +296,19 @@ public class PolarTTT extends KeyAdapter{
 				}
 				for (int i = 0; i < 48; i++) {
 					history[i] = null;
+					fitnesses[i] = 0;
 				}
 				
-				//	Switch to menu mode
-				canvas.gameoff();
-				frame.setVisible(true);
+				if (isVisible) {
+					
+					//	Switch to menu mode
+					canvas.gameoff();
+					frame.setVisible(true);
+				}
+				else if (num_games % 100 == 0) {
+					canvas.setInvisible();
+					canvas.repaint();
+				}
 				
 				//	Wait until the second player is set
 				//	(the first player is always set before the second)
@@ -298,14 +322,19 @@ public class PolarTTT extends KeyAdapter{
 					}
 				}
 				//	Make the new players
-				players[0].newGame(this);
-				players[1].newGame(this);
+				players[0].newGame(this, true);
+				players[1].newGame(this, false);
 				
-				//	Set the game mode so the players aren't overwritten later
-				canvas.gameon();
+				if (isVisible) {
+					//	Set the game mode so the players aren't overwritten later
+					canvas.gameon();
+				}
 				
 				//	Ask player 1 to make a move
 				invokePlayerMove();
+
+				players[0].endGame(board, history);
+				players[1].endGame(board, history);
 				
 				//	Keep restarting the game until exit
 				try {
@@ -316,7 +345,6 @@ public class PolarTTT extends KeyAdapter{
 		}
 
 	}
-	
 	/**
 	 * Requests the players' movements in sequence.
 	 */
@@ -382,12 +410,13 @@ public class PolarTTT extends KeyAdapter{
 			board[location.r][location.t] = (0 == turn % 2 ? PLAYER1 : PLAYER2);
 			history[turn] = location;
 			
+			//	Evaluate the players' fitnesses;
+			fitness = dylanFitness(board);
+			fitnesses[turn] = fitness;
+			
 			//	Rotate turn count and thus give other player a turn
 			turn++;
 			
-			//	Evaluate the players' fitnesses;
-			p1fitness = fitness(board, PLAYER1);
-			p2fitness = fitness(board, PLAYER2);
 			
 			//	Redraw the board
 			canvas.repaint();
@@ -503,6 +532,10 @@ public class PolarTTT extends KeyAdapter{
 					}
 				}
 				
+				if (canvas.menu_indices[2] == 1) {
+					isVisible = false;
+				}
+				
 				//	Break the lock on the main thread which was waiting for this input
 				synchronized(this){
 					this.notifyAll();
@@ -533,7 +566,7 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	Make a new theory
 		char[][] theory_with_move = new char[board.length][board[0].length];
-
+		//	Populated it with the current state
 		theory_with_move = new char[board.length][board[0].length];
 		for (int r = 0; r < 4; r++) {
 			for (int t = 0; t < 12; t++) {
@@ -548,175 +581,17 @@ public class PolarTTT extends KeyAdapter{
 		return theory_with_move;
 	}
 	
-	/**
-	 * The Fitness Function, which provides a numerical representation of the state of the player
-	 * @param board
-	 * @param player
-	 * @return
-	 */
-	public int fitness (char[][] testboard, char player) {
-		
-		char opponent = EMPTY;
-		
-		//	Find our opponent
-		switch (player) {
-		case PLAYER1:
-			opponent = PLAYER2;
-			break;
-		case PLAYER2:
-			opponent = PLAYER1;
-			break;
-		default:
-			throw new RuntimeException("May only fit a viable player!");
-		}
-		
-		//	Track the fitness; we'll add to it as we go
-		int fitness = 0;
-		
-		//	Start the loops!
-		for (int ring = 0; ring < 4; ring++) {
-			for (int spoke = 0; spoke < 12; spoke++) {
-				
-				//	The player is here; evaluate!
-				if (testboard[ring][spoke] == player) {
-					
-					//	First test is the spokes condition
-					//	Only test spokes that are winnable
-					if (!Is(opponent, Neighbor(0, 0, spoke, 0))
-						&& !Is(opponent, Neighbor(1, 0, spoke, 0))
-						&& !Is(opponent, Neighbor(2, 0, spoke, 0))
-						&& !Is(opponent, Neighbor(3, 0, spoke, 0))) {
-						
-						//	Potential spoke win!
-						fitness += SPOKE_WIN_WEIGHT;
-						
-						//	How much progress do we have?
-						if (Is(player, Neighbor(0, 0, spoke, 0))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(1, 0, spoke, 0))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(2, 0, spoke, 0))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(3, 0, spoke, 0))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						
-					}
-					
-					//	The first of two sprial tests to be run; again don't care about wins we can't make
-					if (!Is(opponent, Neighbor(0, 0, spoke, -ring))
-					&& !Is(opponent, Neighbor(1, 0, spoke, -ring + 1))
-					&& !Is(opponent, Neighbor(2, 0, spoke, -ring + 2))
-					&& !Is(opponent, Neighbor(3, 0, spoke, -ring + 3))) {
-						
-						//	Potential spiral win!
-						fitness += SPIRAL_WIN_WEIGHT;
-						
-						//	How much progress do we have?
-						if (Is(player, Neighbor(0, 0, spoke, -ring))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(1, 0, spoke, -ring + 1))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(2, 0, spoke, -ring + 2))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(3, 0, spoke, -ring + 3))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						
-					}
-					
-					//	Test the other spiral; Use the same method as before
-					if (!Is(opponent, Neighbor(0, 0, spoke, ring))
-					&& !Is(opponent, Neighbor(1, 0, spoke, ring - 1))
-					&& !Is(opponent, Neighbor(2, 0, spoke, ring - 2))
-					&& !Is(opponent, Neighbor(3, 0, spoke, ring - 3))) {
-						fitness += SPIRAL_WIN_WEIGHT;
-						if (Is(player, Neighbor(0, 0, spoke, ring))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(1, 0, spoke, ring - 1))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(2, 0, spoke, ring - 2))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-						if (Is(player, Neighbor(3, 0, spoke, ring - 3))) {
-							fitness += ALREADY_OWNED_WEIGHT;
-						}
-					}
-					
-					//	Now try the ring win
-					//	See how far one can go in a row; stop if an opponent is found
-					//	Test each direction individually
-					int furthest_ccw, furthest_cc, owned = 0;
-					
-					for (furthest_ccw = 0; furthest_ccw < 4; furthest_ccw++) {
-						
-						//	Tally our owned along the way
-						if (Is(player, Neighbor(ring, 0, spoke, furthest_ccw))) {
-							owned++;
-						}
-						
-						//	Break if this is a foe; we can't go past opponent blocks
-						else if (Is(opponent, Neighbor(ring, 0, spoke, furthest_ccw))) {
-							break;
-						}
-					}
-					for (furthest_cc = 0; furthest_cc < 4; furthest_cc++) {
-						
-						if (Is(player, Neighbor(ring, 0, spoke, -furthest_cc))) {
-							owned ++;
-						}
-						else if (Is(opponent, Neighbor(ring, 0, spoke, -furthest_cc))) {
-							break;
-						}
-					}
-					
-					//	See how many in a row we can get total
-					int total = furthest_ccw + furthest_cc;
-					
-					//	Test to see if there is a potential win
-					if (3 < total) {
-						
-						//	There is a potential win!
-						fitness += RING_WIN_WEIGHT
-								
-								//	It's possible to have more than 4 in a row on rings
-								+ RING_WIN_BEYOND_4 * (total - 4)
-								
-								//	See how much we already own
-								+ ALREADY_OWNED_WEIGHT * owned;
-						
-					}
-				}
-				
-				//	TODO: Modify fitness based on opponent's state too?
-			}
-		}
-		
-		
-		
-		return fitness;
-	}
-	
 	public int fitness(char player) {
 		switch (player) {
 		case PLAYER1:
-			return p1fitness;
+			return fitness;
 		case PLAYER2:
-			return p2fitness;
+			return -fitness;
 		default:
 			throw new RuntimeException("Must select a viable player!");
 		}
 	}
-        public int dylanFitness(char[][] board)
-        {
+        public int dylanFitness(char[][] board) {
             String str, str2;
             int fitness = 0;
             int ring = 0;
@@ -979,6 +854,7 @@ public class PolarTTT extends KeyAdapter{
 	private Location[] history;
 	private Location[] available_locations_l;
 	private boolean[][] available_locations;
-	private int turn, p1fitness, p2fitness;
-	private boolean gameon;
+	private int fitnesses[];
+	private int turn, fitness, num_games = 0;
+	private boolean gameon, isVisible = true;
 }

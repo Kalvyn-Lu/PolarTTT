@@ -20,14 +20,23 @@ public abstract class Player {
 	/**
 	 * Reset the player to its defaults
 	 */
-	public void newGame(PolarTTT game) {
+	public void newGame(PolarTTT game, boolean isMaximizer) {
 		//	Sets the game; this can't be done in constructor because of the circular logic problem
 		this.game = game;
+		this.isMaximizer = true;
 	}
 	/**
 	 * Prepare a player for a new turn. Does nothing unless overridden.
 	 */
 	public void newRound(){
+	}
+	/**
+	 * Allow the player to perform end-game logic to hopefully learn for next time.
+	 * @param board The game board at the final state
+	 * @param history The final move sequence. Note that players alternate move in this history sequence.
+	 */
+	public void endGame(char[][] board, Location[] history) {
+		
 	}
 	/**
 	 * Accept input from the game
@@ -81,6 +90,7 @@ public abstract class Player {
 	}
 
 	public PolarTTT game;
+	protected boolean isMaximizer;
 	private boolean mousereceived;
 	private Location mouseLocation;
 }
