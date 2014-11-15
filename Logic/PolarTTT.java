@@ -11,6 +11,597 @@ import Players.*;
  */
 public class PolarTTT extends KeyAdapter{
 	
+	
+	/**
+	 * Starts the game from scratch
+	 */
+	public void begin() {
+		synchronized (frame) {
+			
+			//	Game loop!
+			while (true) {
+				
+				//	Reset everything
+				turn = 0;
+				for(int i = 0; i < 4; i++) {
+					for (int j = 0; j < 12; j++){
+						board[i][j] = EMPTY;
+					}
+				}
+				for (int i = 0; i < 48; i++) {
+					history[i] = null;
+					fitnesses[i] = 0;
+				}
+				
+				if (isVisible) {
+					players[0] = players[1] = null;
+					//	Switch to menu mode
+					canvas.gameoff();
+					frame.setVisible(true);
+				}
+				
+				else {
+					//	swap players to share the first-move bias
+					Player temp = players[0];
+					players[0] = players[1];
+					players[1] = temp;
+					
+					if (num_games % 1000 == 0){
+						canvas.setInvisible(players[0], players[1]);
+						canvas.repaint();
+					}
+				}
+				
+				//	Wait until the second player is set
+				//	(the first player is always set before the second)
+				synchronized (this) {
+					while (players[1] == null) {
+						try {
+							this.wait();
+						}
+						catch (InterruptedException e) {
+						}
+					}
+				}
+				if (isVisible) {
+					canvas.gameon();
+				}
+				else if (num_games == 0){
+					canvas.setInvisible(players[0], players[1]);
+				}
+				
+				//	Make the new players
+				players[0].newGame(this, true);
+				players[1].newGame(this, false);
+				
+				
+				//	Ask players to make moves
+				invokePlayerMove();
+				
+				num_games++;
+
+				players[0].endGame(board, history);
+				players[1].endGame(board, history);
+				
+				
+				if (isVisible) {
+					//	Keep restarting the game until exit
+					try {
+						System.out.println("Waiting!");
+						frame.wait();
+						System.out.println("Done waiting!");
+					} catch (InterruptedException e) {
+						System.out.println("Interrupted!");
+						canvas.gameoff();
+					}
+				}
+			}
+		}
+
+	}
+	/**
+	 * Requests the players' movements in sequence.
+	 */
+	private void invokePlayerMove() {
+		//	Instantiate outside of the while scope
+		Location choice;
+		while (turn < 48) {
+			
+			//	Reset available moves
+			findAvailableMoves();
+			
+			//	This shouldn't happen.
+			if (available_locations_l == null){
+				throw new RuntimeException("Out of moves prematurely!");
+			}
+			
+			//	Start a player's new round
+			Player p = players[turn & 1];
+			p.newRound();
+			
+		
+			//	Get the player's move
+			choice = p.getChoice(available_locations_l);
+			if (!choose(choice)){
+				gameon = false;
+				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) made an illegal move and lost the game!\n");
+				players[(turn + 1) & 1].incScore();
+				return;
+			}
+			//if (checkWin(choice)) {
+			if (win(getPlayerSymbol(p), choice.r, choice.t)){
+				gameon = false;
+				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
+				fitnesses[turn - 1] = WIN_WEIGHT;
+				players[(turn + 1) & 1].incScore();
+				return;
+			}
+		}
+		
+		//	Cat's game!
+		gameon = false;
+		canvas.setStatus(GameCanvas.STATUS_TIE, turn, players[1].getName() + " ( " + PLAYER2 + " ) made the last move and tied the game!\n");
+		num_ties++;
+	}
+	
+	/**
+	 * Makes a move
+	 * @param location The location to move
+	 * @return Whether the move was allowed
+	 */
+	private boolean choose (Location location) {
+		
+		//	If we're allowed to play here, play here
+		if (moveIsAvailable(location)) {
+			
+			//	Store the player's move
+			board[location.r][location.t] = (0 == (turn & 1) ? PLAYER1 : PLAYER2);
+			history[turn] = location;
+			
+			//	Evaluate the players' fitnesses;
+			fitness = dylanFitness(board);
+			fitnesses[turn] = fitness;
+			
+			//	Rotate turn count and thus give other player a turn
+			turn++;
+			
+			if (isVisible) {
+				//	Redraw the board
+				canvas.repaint();
+			}
+			
+			//	Pass that the move was successful
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Determines if the player has won the game given the location of a move
+	 * @param player The player to check with. This is unnecessary in theory.
+	 * @param ring The ring on which the last play was made
+	 * @param spoke The spoke on which the last play was made
+	 * @return
+	 */
+	private boolean win(char player, int ring, int spoke) {
+		return Is(player, At(ring, spoke)) && (
+			(	//	One Spoke win
+				Is(player, Neighbor(0, 0, spoke, 0))
+				&& Is(player, Neighbor(1, 0, spoke, 0))
+				&& Is(player, Neighbor(2, 0, spoke, 0))
+				&& Is(player, Neighbor(3, 0, spoke, 0))
+			) || (	//	One counter-clockwise win
+				Is(player, Neighbor(0, 0, spoke, -ring))
+				&& Is(player, Neighbor(1, 0, spoke, -ring + 1))
+				&& Is(player, Neighbor(2, 0, spoke, -ring + 2))
+				&& Is(player, Neighbor(3, 0, spoke, -ring + 3))
+			) || (	//	One clockwise win
+				Is(player, Neighbor(0, 0, spoke, ring))
+				&& Is(player, Neighbor(1, 0, spoke, ring - 1))
+				&& Is(player, Neighbor(2, 0, spoke, ring - 2))
+				&& Is(player, Neighbor(3, 0, spoke, ring - 3))
+			) || (	//	Ring win *-X-X-X
+				Is(player, Neighbor(ring, 0, spoke, 1))
+				&& Is(player, Neighbor(ring, 0, spoke, 2))
+				&& Is(player, Neighbor(ring, 0, spoke, 3))
+			) || (	//	Ring win X-*-X-X
+				Is(player, Neighbor(ring, 0, spoke, -1))
+				&& Is(player, Neighbor(ring, 0, spoke, 1))
+				&& Is(player, Neighbor(ring, 0, spoke, 2))
+			) || (	//	Ring win X-X-*-X
+				Is(player, Neighbor(ring, 0, spoke, -2))
+				&& Is(player, Neighbor(ring, 0, spoke, -1))
+				&& Is(player, Neighbor(ring, 0, spoke, 1))
+			) || (	//	Ring win X-X-X-*
+				Is(player, Neighbor(ring, 0, spoke, -3))
+				&& Is(player, Neighbor(ring, 0, spoke, -2))
+				&& Is(player, Neighbor(ring, 0, spoke, -1))
+			)
+		);
+	}
+	private char At(int ring, int spoke) {
+		return peek(ring, spoke);
+	}
+	private char Neighbor(int ring, int ring_offset, int spoke, int spoke_offset){
+		return peek(ring + ring_offset, (spoke + spoke_offset + 12) % 12);
+	}
+	private boolean Is(char x, char y) {
+		return x == y;
+	}
+		
+	@Override
+	public void keyPressed(KeyEvent e) {
+		switch (e.getKeyCode()){
+		
+		//	Move up
+		case KeyEvent.VK_UP:
+			canvas.moveup();
+			break;
+			
+		//	Move down
+		case KeyEvent.VK_DOWN:
+			canvas.movedown();
+			break;
+			
+		//	Move left
+		case KeyEvent.VK_LEFT:
+			canvas.moveleft();
+			break;
+		
+		//	Move right
+		case KeyEvent.VK_RIGHT:
+			canvas.moveright();
+			break;
+			
+		//	Enter
+		case KeyEvent.VK_ENTER:
+			
+			//	This overwrites players so make sure the mode is right
+			if (canvas.getMode() == GameCanvas.MODE_MENU){
+										
+				//	Assign each player from the provided menu selections
+				for (int i = 0; i < 2; i++) {
+					switch (canvas.menu_indices[i]){
+
+					//	The human player is the first option
+					case 0:
+						players[i] = new HumanPlayer();
+						break;
+					
+					//	The random player is the second option
+					case 1:
+						players[i] = new RandomPlayer();
+						break;
+					
+					//	The greedy player is the third option
+					case 2:
+						players[i] = new GreedyPlayer();
+						break;
+					
+					//	This should only happen during test stage
+					default:
+						System.out.println(canvas.menu_indices[i]);
+						System.exit(0);
+					}
+				}
+				
+				if (canvas.menu_indices[2] == 1) {
+					if (canvas.menu_indices[0] == 0 || canvas.menu_indices[1] == 0) {
+						throw new RuntimeException("Humans can't play in bulk!");
+					}
+					
+					isVisible = false;
+				}
+				
+				//	Break the lock on the main thread which was waiting for this input
+				
+				synchronized(this){
+					this.notifyAll();
+				}
+			}
+			
+			else if (!gameon) {
+
+				synchronized(frame){
+					frame.notifyAll();
+				}
+			}
+			
+			break;
+		
+		//	Allow keyboard shortcut to close
+		case KeyEvent.VK_ESCAPE:
+			System.exit(0);
+			break;
+		}
+	}
+	
+	/**
+	 * Provides a theoretical view of what the board might look like after a potential move is made
+	 * @param loc The location of the theoretical move
+	 * @param player The player who is making this move
+	 * @return The state of the board if that particular move was made
+	 */
+	public char[][] theoreticalMove(Location loc, char player) {
+		
+		//	Make a new theory
+		char[][] theory_with_move = new char[board.length][board[0].length];
+		//	Populated it with the current state
+		theory_with_move = new char[board.length][board[0].length];
+		for (int r = 0; r < 4; r++) {
+			for (int t = 0; t < 12; t++) {
+				theory_with_move[r][t] = board[r][t];
+			}
+		}
+		
+		//	Make the move
+		theory_with_move[loc.r][loc.t] = player;
+		
+		//	Give the board up
+		return theory_with_move;
+	}
+	
+	public int fitness(char player) {
+		return fitness;
+	}
+	public int dylanFitness(char[][] board) {
+		String str, str2;
+		int fitness = 0;
+		int ring = 0;
+		int spoke = 0;
+		int diagonal = 0;
+		int p1Counter = 0;
+		int p2Counter = 0;
+		
+		for(spoke = 0; spoke<12; spoke++)//iterating through the spokes
+		{
+			p1Counter = 0;
+			p2Counter = 0;
+
+			str = ""+board[0][spoke]+board[1][spoke]+board[2][spoke]+board[3][spoke]+"";
+			for(int a = 0; a<4; a++)
+			{
+				if(str.charAt(a) == PLAYER1) p1Counter++;
+				if(str.charAt(a) == PLAYER2) p2Counter++;
+			}
+			if(p1Counter != 0 && p2Counter != 0){}//both player on this spoke, no possible win
+			else if(p1Counter == 0 && p2Counter ==0){}//neither player on this spoke, trivial
+			else
+			{
+				fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the spoke
+			}
+		}
+		for(diagonal = 0; diagonal<24; diagonal++)//iterating through the diagonals
+		{
+			p1Counter = 0;
+			p2Counter = 0;
+
+			Location[] locations = dylanDiagonal(diagonal);
+			str = ""+board[locations[0].r][locations[0].t]+
+					board[locations[1].r][locations[1].t]+
+					board[locations[2].r][locations[2].t]+
+					board[locations[3].r][locations[3].t]+"";
+			for(int a = 0; a<4; a++)
+			{
+				if(str.charAt(a) == PLAYER1) p1Counter++;
+				if(str.charAt(a) == PLAYER2) p2Counter++;
+			}
+			if(p1Counter != 0 && p2Counter != 0){}//both player on this diagonal, no possible win
+			else if(p1Counter == 0 && p2Counter ==0){}//neither player on this diagonal, trivial
+			else
+			{
+				fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the diagonal
+			}
+		}
+		for(ring = 0; ring<4; ring++)//iterating through the rings
+		{
+			str = ""+board[ring][0]+
+					board[ring][1]+
+					board[ring][2]+
+					board[ring][3]+
+					board[ring][4]+
+					board[ring][5]+
+					board[ring][6]+
+					board[ring][7]+
+					board[ring][8]+
+					board[ring][9]+
+					board[ring][10]+
+					board[ring][11]+"";
+			str2 = ""+board[ring][5]+
+					board[ring][6]+
+					board[ring][7]+
+					board[ring][8]+
+					board[ring][9]+
+					board[ring][10]+
+					board[ring][11]+
+					board[ring][0]+
+					board[ring][1]+
+					board[ring][2]+
+					board[ring][3]+
+					board[ring][4]+""; 
+			if(str.contains(".XXX.")) fitness+=100;
+			if(str.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
+			if(str2.contains(".XXX.")) fitness+=100;
+			if(str2.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
+			//this is the only way i could think to account for it, but im not sure how to make it apply to the rest
+			for(int b = 0; b<12; b++)
+			{
+				p1Counter = 0;
+				p2Counter = 0;
+				for(int a = 0; a<4; a++)
+				{
+					if(str.charAt((a+b)%12) == PLAYER1) p1Counter++;
+					if(str.charAt((a+b)%12) == PLAYER2) p2Counter++;
+				}
+				if(p1Counter != 0 && p2Counter != 0){}//both player on this ring, no possible win
+				else if(p1Counter == 0 && p2Counter ==0){}//neither player on this ring, trivial
+				else
+				{
+					fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the ring
+				}
+			}
+		}
+		return fitness;
+	}
+	public Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
+	{
+		Location[] locations = new Location[4];
+		for(int a = 0; a<4; a++)
+		{
+			locations[a] = new Location(0,0);
+		}
+		switch (diagonal)
+		{
+			case 0:
+				locations[0] = new Location(0,0);
+				locations[1] = new Location(1,1);
+				locations[2] = new Location(2,2);
+				locations[3] = new Location(3,3);
+				break;
+			case 1:
+				locations[0] = new Location(0,1);
+				locations[1] = new Location(1,2);
+				locations[2] = new Location(2,3);
+				locations[3] = new Location(3,4);
+				break;
+			case 2:
+				locations[0] = new Location(0,2);
+				locations[1] = new Location(1,3);
+				locations[2] = new Location(2,4);
+				locations[3] = new Location(3,5);
+				break;
+			case 3:
+				locations[0] = new Location(0,3);
+				locations[1] = new Location(1,4);
+				locations[2] = new Location(2,5);
+				locations[3] = new Location(3,6);
+				break;
+			case 4:
+				locations[0] = new Location(0,4);
+				locations[1] = new Location(1,5);
+				locations[2] = new Location(2,6);
+				locations[3] = new Location(3,7);
+				break;
+			case 5:
+				locations[0] = new Location(0,5);
+				locations[1] = new Location(1,6);
+				locations[2] = new Location(2,7);
+				locations[3] = new Location(3,8);
+				break;
+			case 6:
+				locations[0] = new Location(0,6);
+				locations[1] = new Location(1,7);
+				locations[2] = new Location(2,8);
+				locations[3] = new Location(3,9);
+				break;
+			case 7:
+				locations[0] = new Location(0,7);
+				locations[1] = new Location(1,8);
+				locations[2] = new Location(2,9);
+				locations[3] = new Location(3,10);
+				break;
+			case 8:
+				locations[0] = new Location(0,8);
+				locations[1] = new Location(1,9);
+				locations[2] = new Location(2,10);
+				locations[3] = new Location(3,11);
+				break;
+			case 9:
+				locations[0] = new Location(0,9);
+				locations[1] = new Location(1,10);
+				locations[2] = new Location(2,11);
+				locations[3] = new Location(3,0);
+				break;
+			case 10:
+				locations[0] = new Location(0,10);
+				locations[1] = new Location(1,11);
+				locations[2] = new Location(2,0);
+				locations[3] = new Location(3,1);
+				break;
+			case 11:
+				locations[0] = new Location(0,11);
+				locations[1] = new Location(1,0);
+				locations[2] = new Location(2,1);
+				locations[3] = new Location(3,2);
+				break;
+			case 12:
+				locations[0] = new Location(0,0);
+				locations[1] = new Location(1,11);
+				locations[2] = new Location(2,10);
+				locations[3] = new Location(3,9);
+				break;
+			case 13:
+				locations[0] = new Location(0,1);
+				locations[1] = new Location(1,0);
+				locations[2] = new Location(2,11);
+				locations[3] = new Location(3,10);
+				break;
+			case 14:
+				locations[0] = new Location(0,2);
+				locations[1] = new Location(1,1);
+				locations[2] = new Location(2,0);
+				locations[3] = new Location(3,11);
+				break;
+			case 15:
+				locations[0] = new Location(0,3);
+				locations[1] = new Location(1,2);
+				locations[2] = new Location(2,1);
+				locations[3] = new Location(3,0);
+				break;
+			case 16:
+				locations[0] = new Location(0,4);
+				locations[1] = new Location(1,3);
+				locations[2] = new Location(2,2);
+				locations[3] = new Location(3,1);
+				break;
+			case 17:
+				locations[0] = new Location(0,5);
+				locations[1] = new Location(1,4);
+				locations[2] = new Location(2,3);
+				locations[3] = new Location(3,2);
+				break;
+			case 18:
+				locations[0] = new Location(0,6);
+				locations[1] = new Location(1,5);
+				locations[2] = new Location(2,4);
+				locations[3] = new Location(3,3);
+				break;
+			case 19:
+				locations[0] = new Location(0,7);
+				locations[1] = new Location(1,6);
+				locations[2] = new Location(2,5);
+				locations[3] = new Location(3,4);
+				break;
+			case 20:
+				locations[0] = new Location(0,8);
+				locations[1] = new Location(1,7);
+				locations[2] = new Location(2,6);
+				locations[3] = new Location(3,5);
+				break;
+			case 21:
+				locations[0] = new Location(0,9);
+				locations[1] = new Location(1,8);
+				locations[2] = new Location(2,7);
+				locations[3] = new Location(3,6);
+				break;
+			case 22:
+				locations[0] = new Location(0,10);
+				locations[1] = new Location(1,9);
+				locations[2] = new Location(2,8);
+				locations[3] = new Location(3,7);
+				break;
+			case 23:
+				locations[0] = new Location(0,11);
+				locations[1] = new Location(1,10);
+				locations[2] = new Location(2,9);
+				locations[3] = new Location(3,8);
+				break;																																				
+		}
+		return locations;
+	}
+	
+
 	/**
 	 * How much a winning state matters. This mainly appears in the theoretical test
 	 */
@@ -71,19 +662,21 @@ public class PolarTTT extends KeyAdapter{
 		frame.addFocusListener(new FocusListener(){
 			
 			//	Do nothing
-            public void focusGained(FocusEvent e){}
-            
-            //	Request focus
-            public void focusLost(FocusEvent e){
-                e.getComponent().requestFocus();
-            }
-        });
+			public void focusGained(FocusEvent e){}
+			
+			//	Request focus
+			public void focusLost(FocusEvent e){
+				e.getComponent().requestFocus();
+			}
+		});
 		
 		//	Allow the keyboard input to be run
 		frame.addKeyListener(this);
 			
 		//	Some new arrays need to be made
 		players = new Player[2];
+
+		players[0] = players[1] = null;
 		board = new char[4][12];
 		available_locations = new boolean[4][12];
 		history = new Location[48];
@@ -106,7 +699,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @param theta The spoke on the loop closest to the mouse location on click
 	 */
 	public void receiveMouseInput(int radius, int theta) {
-		this.players[turn % 2].receiveMouseInput(radius, theta);
+		this.players[turn & 1].receiveMouseInput(radius, theta);
 	}
 	
 	/**
@@ -277,573 +870,16 @@ public class PolarTTT extends KeyAdapter{
 		return false;
 	}
 	
-	/**
-	 * Starts the game from scratch
-	 */
-	public void begin() {
-		synchronized (frame) {
-			
-			//	Game loop!
-			while (true) {
-				
-				//	Reset everything
-				turn = 0;
-				players[0] = players[1] = null;
-				for(int i = 0; i < 4; i++) {
-					for (int j = 0; j < 12; j++){
-						board[i][j] = EMPTY;
-					}
-				}
-				for (int i = 0; i < 48; i++) {
-					history[i] = null;
-					fitnesses[i] = 0;
-				}
-				
-				if (isVisible) {
-					
-					//	Switch to menu mode
-					canvas.gameoff();
-					frame.setVisible(true);
-				}
-				else if (num_games % 100 == 0) {
-					canvas.setInvisible();
-					canvas.repaint();
-				}
-				
-				//	Wait until the second player is set
-				//	(the first player is always set before the second)
-				synchronized (this) {
-					while (players[1] == null){
-						try {
-							this.wait();
-						}
-						catch (InterruptedException e) {
-						}
-					}
-				}
-				//	Make the new players
-				players[0].newGame(this, true);
-				players[1].newGame(this, false);
-				
-				if (isVisible) {
-					//	Set the game mode so the players aren't overwritten later
-					canvas.gameon();
-				}
-				
-				//	Ask player 1 to make a move
-				invokePlayerMove();
-
-				players[0].endGame(board, history);
-				players[1].endGame(board, history);
-				
-				//	Keep restarting the game until exit
-				try {
-					frame.wait();
-				} catch (InterruptedException e) {
-				}
-			}
-		}
-
-	}
-	/**
-	 * Requests the players' movements in sequence.
-	 */
-	private void invokePlayerMove() {
-		//	Instantiate outside of the while scope
-		Location choice;
-		while (turn < 48) {
-			
-			//	Reset available moves
-			findAvailableMoves();
-			
-			//	This shouldn't happen.
-			if (available_locations_l == null){
-				throw new RuntimeException("Out of moves prematurely!");
-			}
-			
-			//	Start a player's new round
-			Player p = players[turn % 2];
-			p.newRound();
-			
-			/*
-			//	Print out the list of every location (helpful when debugging)
-			ArrayList<Location> locs = allAvailableLocations();
-			
-			for (Location l : locs) {
-				System.out.print("(" + l.r + "," + l.t + "), ");
-			}
-			System.out.println();
- 			*/
-			
-		
-			//	Get the player's move
-			choice = p.getChoice(available_locations_l);
-			if (!choose(choice)){
-				gameon = false;
-				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) made an illegal move and lost the game!\n");
-				return;
-			}
-			//if (checkWin(choice)) {
-			if (win(getPlayerSymbol(p), choice.r, choice.t)){
-				gameon = false;
-				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
-				return;
-			}
-		}
-		
-		//	Cat's game!
-		gameon = false;
-		canvas.setStatus(GameCanvas.STATUS_TIE, turn, players[1].getName() + " ( " + PLAYER2 + " ) made the last move and tied the game!\n");
+	public int gameCount() {
+		return num_games;
 	}
 	
-	/**
-	 * Makes a move
-	 * @param location The location to move
-	 * @return Whether the move was allowed
-	 */
-	private boolean choose (Location location) {
-		
-		//	If we're allowed to play here, play here
-		if (moveIsAvailable(location)) {
-			
-			//	Store the player's move
-			board[location.r][location.t] = (0 == turn % 2 ? PLAYER1 : PLAYER2);
-			history[turn] = location;
-			
-			//	Evaluate the players' fitnesses;
-			fitness = dylanFitness(board);
-			fitnesses[turn] = fitness;
-			
-			//	Rotate turn count and thus give other player a turn
-			turn++;
-			
-			
-			//	Redraw the board
-			canvas.repaint();
-			
-			//	Pass that the move was successful
-			return true;
-		}
-		
-		return false;
+	public int winCount(int player) {
+		return players[player & 1].getScore();
 	}
-	
-	/**
-	 * Determines if the player has won the game given the location of a move
-	 * @param player The player to check with. This is unnecessary in theory.
-	 * @param ring The ring on which the last play was made
-	 * @param spoke The spoke on which the last play was made
-	 * @return
-	 */
-	private boolean win(char player, int ring, int spoke) {
-		return Is(player, At(ring, spoke)) && (
-			(	//	One Spoke win
-				Is(player, Neighbor(0, 0, spoke, 0))
-				&& Is(player, Neighbor(1, 0, spoke, 0))
-				&& Is(player, Neighbor(2, 0, spoke, 0))
-				&& Is(player, Neighbor(3, 0, spoke, 0))
-			) || (	//	One counter-clockwise win
-				Is(player, Neighbor(0, 0, spoke, -ring))
-				&& Is(player, Neighbor(1, 0, spoke, -ring + 1))
-				&& Is(player, Neighbor(2, 0, spoke, -ring + 2))
-				&& Is(player, Neighbor(3, 0, spoke, -ring + 3))
-			) || (	//	One clockwise win
-				Is(player, Neighbor(0, 0, spoke, ring))
-				&& Is(player, Neighbor(1, 0, spoke, ring - 1))
-				&& Is(player, Neighbor(2, 0, spoke, ring - 2))
-				&& Is(player, Neighbor(3, 0, spoke, ring - 3))
-			) || (	//	Ring win *-X-X-X
-				Is(player, Neighbor(ring, 0, spoke, 1))
-				&& Is(player, Neighbor(ring, 0, spoke, 2))
-				&& Is(player, Neighbor(ring, 0, spoke, 3))
-			) || (	//	Ring win X-*-X-X
-				Is(player, Neighbor(ring, 0, spoke, -1))
-				&& Is(player, Neighbor(ring, 0, spoke, 1))
-				&& Is(player, Neighbor(ring, 0, spoke, 2))
-			) || (	//	Ring win X-X-*-X
-				Is(player, Neighbor(ring, 0, spoke, -2))
-				&& Is(player, Neighbor(ring, 0, spoke, -1))
-				&& Is(player, Neighbor(ring, 0, spoke, 1))
-			) || (	//	Ring win X-X-X-*
-				Is(player, Neighbor(ring, 0, spoke, -3))
-				&& Is(player, Neighbor(ring, 0, spoke, -2))
-				&& Is(player, Neighbor(ring, 0, spoke, -1))
-			)
-		);
+	public int tieCount() {
+		return num_ties;
 	}
-	private char At(int ring, int spoke) {
-		return peek(ring, spoke);
-	}
-	private char Neighbor(int ring, int ring_offset, int spoke, int spoke_offset){
-		return peek(ring + ring_offset, (spoke + spoke_offset + 12) % 12);
-	}
-	private boolean Is(char x, char y) {
-		return x == y;
-	}
-		
-	@Override
-	public void keyPressed(KeyEvent e) {
-		switch (e.getKeyCode()){
-		
-		//	Move up
-		case KeyEvent.VK_UP:
-			canvas.moveup();
-			break;
-			
-		//	Move down
-		case KeyEvent.VK_DOWN:
-			canvas.movedown();
-			break;
-			
-		//	Move left
-		case KeyEvent.VK_LEFT:
-			canvas.moveleft();
-			break;
-		
-		//	Move right
-		case KeyEvent.VK_RIGHT:
-			canvas.moveright();
-			break;
-			
-		//	Enter
-		case KeyEvent.VK_ENTER:
-			
-			//	This overwrites players so make sure the mode is right
-			if (canvas.getMode() == GameCanvas.MODE_MENU){
-										
-				//	Assign each player from the provided menu selections
-				for (int i = 0; i < 2; i++) {
-					switch (canvas.menu_indices[i]){
-
-					//	The human player is the first option
-					case 0:
-						players[i] = new HumanPlayer();
-						break;
-					
-					//	The random player is the second option
-					case 1:
-						players[i] = new RandomPlayer();
-						break;
-					
-					//	The greedy player is the third option
-					case 2:
-						players[i] = new GreedyPlayer();
-						break;
-					
-					//	This should only happen during test stage
-					default:
-						System.out.println(canvas.menu_indices[i]);
-						System.exit(0);
-					}
-				}
-				
-				if (canvas.menu_indices[2] == 1) {
-					isVisible = false;
-				}
-				
-				//	Break the lock on the main thread which was waiting for this input
-				synchronized(this){
-					this.notifyAll();
-				}
-			}
-			
-			else if (!gameon) {
-				synchronized(frame) {
-					frame.notifyAll();
-				}
-			}
-			break;
-		
-		//	Allow keyboard shortcut to close
-		case KeyEvent.VK_ESCAPE:
-			System.exit(0);
-			break;
-		}
-	}
-	
-	/**
-	 * Provides a theoretical view of what the board might look like after a potential move is made
-	 * @param loc The location of the theoretical move
-	 * @param player The player who is making this move
-	 * @return The state of the board if that particular move was made
-	 */
-	public char[][] theoreticalMove(Location loc, char player) {
-		
-		//	Make a new theory
-		char[][] theory_with_move = new char[board.length][board[0].length];
-		//	Populated it with the current state
-		theory_with_move = new char[board.length][board[0].length];
-		for (int r = 0; r < 4; r++) {
-			for (int t = 0; t < 12; t++) {
-				theory_with_move[r][t] = board[r][t];
-			}
-		}
-		
-		//	Make the move
-		theory_with_move[loc.r][loc.t] = player;
-		
-		//	Give the board up
-		return theory_with_move;
-	}
-	
-	public int fitness(char player) {
-		return fitness;
-	}
-        public int dylanFitness(char[][] board) {
-            String str, str2;
-            int fitness = 0;
-            int ring = 0;
-            int spoke = 0;
-            int diagonal = 0;
-            int p1Counter = 0;
-            int p2Counter = 0;
-            
-            for(spoke = 0; spoke<12; spoke++)//iterating through the spokes
-            {
-                p1Counter = 0;
-                p2Counter = 0;
-
-                str = ""+board[0][spoke]+board[1][spoke]+board[2][spoke]+board[3][spoke]+"";
-                for(int a = 0; a<4; a++)
-                {
-                    if(str.charAt(a) == PLAYER1) p1Counter++;
-                    if(str.charAt(a) == PLAYER2) p2Counter++;
-                }
-                if(p1Counter != 0 && p2Counter != 0){}//both player on this spoke, no possible win
-                else if(p1Counter == 0 && p2Counter ==0){}//neither player on this spoke, trivial
-                else
-                {
-                    fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the spoke
-                }
-            }
-            for(diagonal = 0; diagonal<24; diagonal++)//iterating through the diagonals
-            {
-                p1Counter = 0;
-                p2Counter = 0;
-
-                Location[] locations = dylanDiagonal(diagonal);
-                str = ""+board[locations[0].r][locations[0].t]+
-                        board[locations[1].r][locations[1].t]+
-                        board[locations[2].r][locations[2].t]+
-                        board[locations[3].r][locations[3].t]+"";
-                for(int a = 0; a<4; a++)
-                {
-                    if(str.charAt(a) == PLAYER1) p1Counter++;
-                    if(str.charAt(a) == PLAYER2) p2Counter++;
-                }
-                if(p1Counter != 0 && p2Counter != 0){}//both player on this diagonal, no possible win
-                else if(p1Counter == 0 && p2Counter ==0){}//neither player on this diagonal, trivial
-                else
-                {
-                    fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the diagonal
-                }
-            }
-            for(ring = 0; ring<4; ring++)//iterating through the rings
-            {
-                str = ""+board[ring][0]+
-                        board[ring][1]+
-                        board[ring][2]+
-                        board[ring][3]+
-                        board[ring][4]+
-                        board[ring][5]+
-                        board[ring][6]+
-                        board[ring][7]+
-                        board[ring][8]+
-                        board[ring][9]+
-                        board[ring][10]+
-                        board[ring][11]+"";
-                str2 = ""+board[ring][5]+
-                        board[ring][6]+
-                        board[ring][7]+
-                        board[ring][8]+
-                        board[ring][9]+
-                        board[ring][10]+
-                        board[ring][11]+
-                        board[ring][0]+
-                        board[ring][1]+
-                        board[ring][2]+
-                        board[ring][3]+
-                        board[ring][4]+""; 
-                if(str.contains(".XXX.")) fitness+=100;
-                if(str.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
-                if(str2.contains(".XXX.")) fitness+=100;
-                if(str2.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
-                //this is the only way i could think to account for it, but im not sure how to make it apply to the rest
-                for(int b = 0; b<12; b++)
-                {
-                    p1Counter = 0;
-                    p2Counter = 0;
-                    for(int a = 0; a<4; a++)
-                    {
-                        if(str.charAt((a+b)%12) == PLAYER1) p1Counter++;
-                        if(str.charAt((a+b)%12) == PLAYER2) p2Counter++;
-                    }
-                    if(p1Counter != 0 && p2Counter != 0){}//both player on this ring, no possible win
-                    else if(p1Counter == 0 && p2Counter ==0){}//neither player on this ring, trivial
-                    else
-                    {
-                        fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the ring
-                    }
-                }
-            }
-            return fitness;
-        }
-        public Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
-        {
-            Location[] locations = new Location[4];
-            for(int a = 0; a<4; a++)
-            {
-                locations[a] = new Location(0,0);
-            }
-            switch (diagonal)
-            {
-                case 0:
-                    locations[0] = new Location(0,0);
-                    locations[1] = new Location(1,1);
-                    locations[2] = new Location(2,2);
-                    locations[3] = new Location(3,3);
-                    break;
-                case 1:
-                    locations[0] = new Location(0,1);
-                    locations[1] = new Location(1,2);
-                    locations[2] = new Location(2,3);
-                    locations[3] = new Location(3,4);
-                    break;
-                case 2:
-                    locations[0] = new Location(0,2);
-                    locations[1] = new Location(1,3);
-                    locations[2] = new Location(2,4);
-                    locations[3] = new Location(3,5);
-                    break;
-                case 3:
-                    locations[0] = new Location(0,3);
-                    locations[1] = new Location(1,4);
-                    locations[2] = new Location(2,5);
-                    locations[3] = new Location(3,6);
-                    break;
-                case 4:
-                    locations[0] = new Location(0,4);
-                    locations[1] = new Location(1,5);
-                    locations[2] = new Location(2,6);
-                    locations[3] = new Location(3,7);
-                    break;
-                case 5:
-                    locations[0] = new Location(0,5);
-                    locations[1] = new Location(1,6);
-                    locations[2] = new Location(2,7);
-                    locations[3] = new Location(3,8);
-                    break;
-                case 6:
-                    locations[0] = new Location(0,6);
-                    locations[1] = new Location(1,7);
-                    locations[2] = new Location(2,8);
-                    locations[3] = new Location(3,9);
-                    break;
-                case 7:
-                    locations[0] = new Location(0,7);
-                    locations[1] = new Location(1,8);
-                    locations[2] = new Location(2,9);
-                    locations[3] = new Location(3,10);
-                    break;
-                case 8:
-                    locations[0] = new Location(0,8);
-                    locations[1] = new Location(1,9);
-                    locations[2] = new Location(2,10);
-                    locations[3] = new Location(3,11);
-                    break;
-                case 9:
-                    locations[0] = new Location(0,9);
-                    locations[1] = new Location(1,10);
-                    locations[2] = new Location(2,11);
-                    locations[3] = new Location(3,0);
-                    break;
-                case 10:
-                    locations[0] = new Location(0,10);
-                    locations[1] = new Location(1,11);
-                    locations[2] = new Location(2,0);
-                    locations[3] = new Location(3,1);
-                    break;
-                case 11:
-                    locations[0] = new Location(0,11);
-                    locations[1] = new Location(1,0);
-                    locations[2] = new Location(2,1);
-                    locations[3] = new Location(3,2);
-                    break;
-                case 12:
-                    locations[0] = new Location(0,0);
-                    locations[1] = new Location(1,11);
-                    locations[2] = new Location(2,10);
-                    locations[3] = new Location(3,9);
-                    break;
-                case 13:
-                    locations[0] = new Location(0,1);
-                    locations[1] = new Location(1,0);
-                    locations[2] = new Location(2,11);
-                    locations[3] = new Location(3,10);
-                    break;
-                case 14:
-                    locations[0] = new Location(0,2);
-                    locations[1] = new Location(1,1);
-                    locations[2] = new Location(2,0);
-                    locations[3] = new Location(3,11);
-                    break;
-                case 15:
-                    locations[0] = new Location(0,3);
-                    locations[1] = new Location(1,2);
-                    locations[2] = new Location(2,1);
-                    locations[3] = new Location(3,0);
-                    break;
-                case 16:
-                    locations[0] = new Location(0,4);
-                    locations[1] = new Location(1,3);
-                    locations[2] = new Location(2,2);
-                    locations[3] = new Location(3,1);
-                    break;
-                case 17:
-                    locations[0] = new Location(0,5);
-                    locations[1] = new Location(1,4);
-                    locations[2] = new Location(2,3);
-                    locations[3] = new Location(3,2);
-                    break;
-                case 18:
-                    locations[0] = new Location(0,6);
-                    locations[1] = new Location(1,5);
-                    locations[2] = new Location(2,4);
-                    locations[3] = new Location(3,3);
-                    break;
-                case 19:
-                    locations[0] = new Location(0,7);
-                    locations[1] = new Location(1,6);
-                    locations[2] = new Location(2,5);
-                    locations[3] = new Location(3,4);
-                    break;
-                case 20:
-                    locations[0] = new Location(0,8);
-                    locations[1] = new Location(1,7);
-                    locations[2] = new Location(2,6);
-                    locations[3] = new Location(3,5);
-                    break;
-                case 21:
-                    locations[0] = new Location(0,9);
-                    locations[1] = new Location(1,8);
-                    locations[2] = new Location(2,7);
-                    locations[3] = new Location(3,6);
-                    break;
-                case 22:
-                    locations[0] = new Location(0,10);
-                    locations[1] = new Location(1,9);
-                    locations[2] = new Location(2,8);
-                    locations[3] = new Location(3,7);
-                    break;
-                case 23:
-                    locations[0] = new Location(0,11);
-                    locations[1] = new Location(1,10);
-                    locations[2] = new Location(2,9);
-                    locations[3] = new Location(3,8);
-                    break;                                                                                                                                                
-            }
-            return locations;
-        }
 	public final static char EMPTY = '.', PLAYER1 = 'X', PLAYER2 = 'O';
 	private GameCanvas canvas;
 	private Frame frame;
@@ -853,6 +889,6 @@ public class PolarTTT extends KeyAdapter{
 	private Location[] available_locations_l;
 	private boolean[][] available_locations;
 	private int fitnesses[];
-	private int turn, fitness, num_games = 0;
+	private int turn, fitness, num_games = 0, num_ties = 0;
 	private boolean gameon, isVisible = true;
 }

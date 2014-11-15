@@ -16,9 +16,10 @@ public class GreedyPlayer extends Player {
 		
 		for (int i = 0; i < options.length; i++) {
 			char[][] theory = game.theoreticalMove(options[i], isMaximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
-			int theory_fitness = Math.abs(game.dylanFitness(theory));
-			
-			System.out.println("Move " + options[i].toString() + " yields " + theory_fitness);
+			int theory_fitness = game.dylanFitness(theory);
+			if (!isMaximizer) {
+				theory_fitness *= -1;
+			}
 			
 			if (theory_fitness < best_val) {
 				continue;
@@ -28,11 +29,6 @@ public class GreedyPlayer extends Player {
 				num_best = 0;
 			}
 			bestPlays[num_best++] = options[i];
-		}
-		
-		System.out.println("Best moves with fitness :" + best_val);
-		for(int i = 0; i < num_best; i++) {
-			System.out.print(bestPlays[i] + ", ");
 		}
 		
 		return bestPlays[(int)(Math.random() * num_best)];

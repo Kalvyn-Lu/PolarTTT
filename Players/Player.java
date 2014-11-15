@@ -89,6 +89,16 @@ public abstract class Player {
 		return mouseLocation;
 	}
 
+	public void incScore(){
+		score++;
+	}
+	public int getScore(){
+		return score;
+	}
+	
+	
+	private int score = 0;
+	
 	public PolarTTT game;
 	protected boolean isMaximizer;
 	private boolean mousereceived;
