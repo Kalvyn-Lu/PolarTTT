@@ -12,6 +12,8 @@ import Players.Player;
  */
 public class GameCanvas extends Canvas{
 	
+	Point[][] points;
+	
 	/**
 	 * Constructs the game canvas
 	 * @param width The width of the canvas in pixels
@@ -27,13 +29,24 @@ public class GameCanvas extends Canvas{
 			menu_indices[i]= 0;
 		}
 		
+		//	Set up the center of the circle
+		origin_x = (int)RADIUS_UNIT * 5;
+		origin_y = height/2;
+		
+		points = new Point[4][12];
+		for (int r = 0; r < 4; r++) {
+			for (int t = 0; t < 12; t++) {
+				points[r][t] = new Point(
+					getXPixelFromLocation(r, t),
+					getYPixelFromLocation(r, t)
+				);
+			}
+		}
+		
 		//	Set up the canvas for display
 		setBackground(BACKGROUND_COLOR);
 		setSize(width, height);
 		
-		//	Set up the center of the circle
-		origin_x = (int)RADIUS_UNIT * 5;
-		origin_y = height/2;
 		
 		//	Allow mouse input
 		this.addMouseListener(new MouseAdapter() {
@@ -49,6 +62,24 @@ public class GameCanvas extends Canvas{
 				//	The XY coordinates relative to the game window's top left corner
 				Point p = e.getPoint();
 				
+				int dist_squared = Integer.MAX_VALUE;
+				
+				for (int r = 0; r < 4; r++) {
+					for (int t = 0; t < 12; t++) {
+						int dist = (points[r][t].x - p.x) * (points[r][t].x - p.x) + 
+								(points[r][t].y - p.y) * (points[r][t].y - p.y);
+						if (dist < dist_squared) {
+							dist_squared = dist;
+							mouse_radius = r;
+							mouse_theta = t;
+						}
+					}
+				}
+				
+				
+				//	As reluctant as I was to change it from this efficient way, the Deathbug wouldn't go away
+				//		so the brute force method was used instead
+				/*
 				//	Adjust to the origin
 				int x = p.x - origin_x, y = p.y - origin_y;
 				
@@ -103,6 +134,7 @@ public class GameCanvas extends Canvas{
 						break;
 					}
 				}
+				*/
 				
 				//	Signal mouse input to the game
 				receiveMouseInput();
@@ -230,12 +262,12 @@ public class GameCanvas extends Canvas{
 		}
 		
 		//	Draw the game board's spokes
-		g.drawLine(getXPixelFromLocation(3, 0), getYPixelFromLocation(3, 0),getXPixelFromLocation(3, 6), getYPixelFromLocation(3, 6));
-		g.drawLine(getXPixelFromLocation(3, 1), getYPixelFromLocation(3, 1),getXPixelFromLocation(3, 7), getYPixelFromLocation(3, 7));
-		g.drawLine(getXPixelFromLocation(3, 2), getYPixelFromLocation(3, 2),getXPixelFromLocation(3, 8), getYPixelFromLocation(3, 8));
-		g.drawLine(getXPixelFromLocation(3, 3), getYPixelFromLocation(3, 3),getXPixelFromLocation(3, 9), getYPixelFromLocation(3, 9));
-		g.drawLine(getXPixelFromLocation(3, 4), getYPixelFromLocation(3, 4),getXPixelFromLocation(3, 10), getYPixelFromLocation(3, 10));
-		g.drawLine(getXPixelFromLocation(3, 5), getYPixelFromLocation(3, 5),getXPixelFromLocation(3, 11), getYPixelFromLocation(3, 11));
+		g.drawLine(points[3][0].x, points[3][0].y, points[3][6].x, points[3][6].y);
+		g.drawLine(points[3][1].x, points[3][1].y, points[3][7].x, points[3][7].y);
+		g.drawLine(points[3][2].x, points[3][2].y, points[3][8].x, points[3][8].y);
+		g.drawLine(points[3][3].x, points[3][3].y, points[3][9].x, points[3][9].y);
+		g.drawLine(points[3][4].x, points[3][4].y, points[3][10].x, points[3][10].y);
+		g.drawLine(points[3][5].x, points[3][5].y, points[3][11].x, points[3][11].y);
 		
 		//	Draw the plays
 		g.setFont(new Font("Arial", Font.BOLD, 24));
@@ -245,13 +277,12 @@ public class GameCanvas extends Canvas{
 				if (at == PolarTTT.EMPTY) {
 					if (game.moveIsAvailable(new Location(i, j))){
 						g.setColor(NEUTRAL_COLOR);
-						g.drawOval(getXPixelFromLocation(i, j) - SYMBOL_WIDTH/2, getYPixelFromLocation(i, j) - SYMBOL_WIDTH/2, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+						g.drawOval(points[i][j].x - SYMBOL_WIDTH/2, points[i][j].y - SYMBOL_WIDTH/2, SYMBOL_WIDTH, SYMBOL_HEIGHT);
 					}
 				}
 				else {
 					g.setColor(at == PolarTTT.PLAYER1 ? P1_COLOR : P2_COLOR);
-					g.drawString("" + at, getXPixelFromLocation(i, j) - SYMBOL_WIDTH/2, getYPixelFromLocation(i, j) + SYMBOL_WIDTH/2);
-					//g2d.fillOval(getXPixelFromLocation(i, j), getYPixelFromLocation(i, j), SYMBOL_WIDTH, SYMBOL_HEIGHT);
+					g.drawString("" + at, points[i][j].x - SYMBOL_WIDTH/2, points[i][j].y + SYMBOL_WIDTH/2);
 				}
 			}
 		}
