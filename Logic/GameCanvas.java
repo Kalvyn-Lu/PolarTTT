@@ -10,7 +10,7 @@ import Players.Player;
  * @author Anthony
  *
  */
-public class GameCanvas extends Canvas{
+public class GameCanvas extends Canvas {
 	
 	Point[][] points;
 	
@@ -62,12 +62,19 @@ public class GameCanvas extends Canvas{
 				//	The XY coordinates relative to the game window's top left corner
 				Point p = e.getPoint();
 				
+				//	Track the best
 				int dist_squared = Integer.MAX_VALUE;
 				
+				//	Check them all
 				for (int r = 0; r < 4; r++) {
 					for (int t = 0; t < 12; t++) {
+						
+						//	Distance formula
 						int dist = (points[r][t].x - p.x) * (points[r][t].x - p.x) + 
 								(points[r][t].y - p.y) * (points[r][t].y - p.y);
+						
+						//	Since we only care about the values of radius and theta at the end
+						//	we can simply overwrite when a new best is found.
 						if (dist < dist_squared) {
 							dist_squared = dist;
 							mouse_radius = r;
@@ -75,66 +82,6 @@ public class GameCanvas extends Canvas{
 						}
 					}
 				}
-				
-				
-				//	As reluctant as I was to change it from this efficient way, the Deathbug wouldn't go away
-				//		so the brute force method was used instead
-				/*
-				//	Adjust to the origin
-				int x = p.x - origin_x, y = p.y - origin_y;
-				
-				//	Get the radius in pixels
-				double r = Math.sqrt(x * x + y * y);
-				
-				//	Assume we're on the farthest out loop first
-				mouse_radius = 3;
-				
-				//	Start from the inside and go out
-				for (int i = 0; i < 3; i++) {
-					
-					//	If it is within the circle, it's in!
-					//	If it's in a ring, it is in this circle but not the previous
-					//		Note 1.5- this is because we adjust by 1 (can't pick 0th ring)
-					//		and .5 (to give margins to the rings)
-					if (r < RADIUS_UNIT * ((double)i + 1.5)){
-						mouse_radius = i;
-						break;
-					}
-				}
-				
-				//	Grab the angle
-				double theta = Math.atan(-(double)y/(double)x);
-				
-				//	Save where to start the tracker
-				int start = 0;
-				
-				//	If we're in an odd quadrant
-				if (0 < x * y) {
-					
-					//	then offset by 3 spokes
-					start = 3;
-					
-					//	and then adjust the angle back to positive
-					theta += Math.PI/2.;
-				}
-				
-				//	Now see if we're below the X axis
-				if (0 < y) {
-					
-					//	Offset 6 more spokes if so
-					start += 6;
-				}
-				
-				//	Do the same trick with the rings only this time for spokes
-				for (int i = 0; i < 4; i++) {
-					
-					//	Unlike before, 0th spoke is allowed, so 0.5 is fine.
-					if (theta < THETA_UNIT * ((double)i + 0.5)) {
-						mouse_theta = (i + start) % 12;	//	Keep it wrapped aroud
-						break;
-					}
-				}
-				*/
 				
 				//	Signal mouse input to the game
 				receiveMouseInput();
@@ -489,11 +436,9 @@ public class GameCanvas extends Canvas{
 	private PolarTTT game;
 	
 	//	Menues
-	private final String[]
-			Player1Types = {"Human", "Random", "Greedy"},
-			Player2Types = {"Human", "Random", "Greedy"},
+	private final String[] PlayerTypes = {"Human", "Random", "Greedy", "Minimax", "Classifier", "ANN"},
 			FastRun = {"One Game", "Bulk Training"};
-	private String[][] menu = {Player1Types, Player2Types, FastRun};
+	private String[][] menu = {PlayerTypes, PlayerTypes, FastRun};
 	
 	//	Modes determine which game is to be played
 	private int mode;

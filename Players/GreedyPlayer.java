@@ -15,9 +15,9 @@ public class GreedyPlayer extends Player {
 		int num_best = 0, best_val = Integer.MIN_VALUE;
 		
 		for (int i = 0; i < options.length; i++) {
-			char[][] theory = game.theoreticalMove(options[i], isMaximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
+			char[][] theory = game.theoreticalMove(options[i], is_maximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
 			int theory_fitness = game.dylanFitness(theory);
-			if (!isMaximizer) {
+			if (!is_maximizer) {
 				theory_fitness *= -1;
 			}
 			

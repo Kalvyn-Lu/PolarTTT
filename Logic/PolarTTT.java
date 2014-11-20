@@ -87,11 +87,8 @@ public class PolarTTT extends KeyAdapter{
 				if (isVisible) {
 					//	Keep restarting the game until exit
 					try {
-						System.out.println("Waiting!");
 						frame.wait();
-						System.out.println("Done waiting!");
 					} catch (InterruptedException e) {
-						System.out.println("Interrupted!");
 						canvas.gameoff();
 					}
 				}
@@ -122,14 +119,14 @@ public class PolarTTT extends KeyAdapter{
 		
 			//	Get the player's move
 			choice = p.getChoice(available_locations_l);
-			if (!choose(choice)){
+			if (choice == null || !choose(choice)){
 				gameon = false;
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) made an illegal move and lost the game!\n");
 				players[(turn + 1) & 1].incScore();
 				return;
 			}
 			//if (checkWin(choice)) {
-			if (win(getPlayerSymbol(p), choice.r, choice.t)){
+			if (win(board, getPlayerSymbol(p), choice.r, choice.t)){
 				gameon = false;
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
 				fitnesses[turn - 1] = WIN_WEIGHT;
@@ -184,7 +181,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @param spoke The spoke on which the last play was made
 	 * @return
 	 */
-	private boolean win(char player, int ring, int spoke) {
+	private boolean win(char[][] board, char player, int ring, int spoke) {
 		return Is(player, At(ring, spoke)) && (
 			(	//	One Spoke win
 				Is(player, Neighbor(0, 0, spoke, 0))
@@ -273,10 +270,22 @@ public class PolarTTT extends KeyAdapter{
 					case 1:
 						players[i] = new RandomPlayer();
 						break;
-					
+
 					//	The greedy player is the third option
 					case 2:
 						players[i] = new GreedyPlayer();
+						break;
+						
+					case 3:
+						players[i] = new MinimaxPlayer();
+						break;
+						
+					case 4:
+						players[i] = new ClassifierPlayer();
+						break;
+						
+					case 5:
+						players[i] = new ANNPlayer();
 						break;
 					
 					//	This should only happen during test stage
@@ -318,12 +327,23 @@ public class PolarTTT extends KeyAdapter{
 	}
 	
 	/**
-	 * Provides a theoretical view of what the board might look like after a potential move is made
+	 * From the current state, provides a theoretical view of what the board might look like after a potential move is made
 	 * @param loc The location of the theoretical move
 	 * @param player The player who is making this move
 	 * @return The state of the board if that particular move was made
 	 */
 	public char[][] theoreticalMove(Location loc, char player) {
+		return theoreticalMove(board, loc, player);
+	}
+	
+	/**
+	 * From a provided state, gives a theoretical view of what the board might look like after a potential move is made
+	 * @param move
+	 * @param loc The location of the theoretical move
+	 * @param player The player who is making this move
+	 * @return The state of the board if that particular move was made. A '!' will be placed in the board of the theory is illegal
+	 */
+	public char[][] theoreticalMove(char[][] board, Location loc, char player) {
 		
 		//	Make a new theory
 		char[][] theory_with_move = new char[board.length][board[0].length];
@@ -335,9 +355,15 @@ public class PolarTTT extends KeyAdapter{
 			}
 		}
 		
-		//	Make the move
-		theory_with_move[loc.r][loc.t] = player;
+		//	Mark an invalid move
+		if (theory_with_move[loc.r][loc.t] != EMPTY || !hasAdjacent(theory_with_move, loc.r, loc.t)) {
+			theory_with_move[loc.r][loc.t] = '!';
+		}
+		else {
 		
+			//	Make the move
+			theory_with_move[loc.r][loc.t] = player;
+		}
 		//	Give the board up
 		return theory_with_move;
 	}
@@ -346,6 +372,19 @@ public class PolarTTT extends KeyAdapter{
 		return fitness;
 	}
 	public int dylanFitness(char[][] board) {
+		//	Todd's edit:
+		//	Not the most efficient check but allows for AI to account for winning states
+		for (int r = 0; r < 4; r++) {
+			for (int t = 0; t < 12; t++) {
+				if (win(board, PLAYER1, r, t)) {
+					return WIN_WEIGHT;
+				}
+				else if (win (board, PLAYER2, r, t)) {
+					return -WIN_WEIGHT;
+				}
+			}
+		}
+		
 		String str, str2;
 		int fitness = 0;
 		int ring = 0;
@@ -666,7 +705,7 @@ public class PolarTTT extends KeyAdapter{
 			
 			//	Request focus
 			public void focusLost(FocusEvent e){
-				e.getComponent().requestFocus();
+				//e.getComponent().requestFocus();
 			}
 		});
 		
@@ -854,7 +893,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @param t The spoke
 	 * @return Whether there is any adjacent taken location
 	 */
-	private boolean hasAdjacent(int r, int t){
+	private boolean hasAdjacent(char[][] board, int r, int t){
 		
 		//	Get all neighbors
 		Location[] neighbors = new Location(r, t).adjacentLocations();
@@ -868,6 +907,10 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	None adjacent
 		return false;
+	}
+	
+	private boolean hasAdjacent(int r, int t) {
+		return hasAdjacent(board, r, t);
 	}
 	
 	public int gameCount() {

@@ -5,6 +5,7 @@ import Logic.PolarTTT;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 
 public class MinimaxPlayer extends Player {
 
@@ -79,12 +80,50 @@ public class MinimaxPlayer extends Player {
 	
 	@Override
 	public Location getChoice(Location[] options) {
-		if (options.length == 48) {
-			return options[(int)(Math.random() * 48)];
-		}
-		return null;
+		char[][] board = game.theoreticalMove(options[0], '.');
+		MinimaxNode root = new MinimaxNode(board, is_maximizer), this_node = root;
+		
+		return bestNode(root, 0).play;
 	}
+	
 
+	public MinimaxNode bestNode(MinimaxNode current_node, int ply_number) {
+		//	Base case- cut off search and apply the heuristic function
+		if (num_plies < ply_number) {
+			current_node.fitness = game.dylanFitness(current_node.board);
+			return current_node;
+		}
+		
+		//	Prepare the worst
+		MinimaxNode best_node = null;
+		int best_fitness = (is_maximizer ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+		
+		//	Go through all possible moves
+		for (int r = 0; r < 4; r++) {
+			for (int t = 0; t < 12; t++) {
+				Location potential_move = new Location(r, t);
+				char[][] theory = game.theoreticalMove(
+						current_node.board, potential_move,
+						(current_node.is_maximizer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2));
+				
+				//	The move was illegal. Ignore it.
+				if (theory[r][t] == '!') {
+					continue;
+				}
+				
+				//	Now we check the potential of this node
+				MinimaxNode potential_node = new MinimaxNode(theory, !current_node.is_maximizer);
+				potential_node.play = potential_move;
+				
+				//	Compare with its best child
+				
+			}
+		}
+		
+		//	Show what we have (might be null!)
+		return best_node;
+	}
+	
 	@Override
 	public String getName() {
 		return "Minimax " + num_plies + "p" + (use_alpha_beta ? "+AB" : "");
@@ -96,6 +135,18 @@ public class MinimaxPlayer extends Player {
 	public boolean use_alpha_beta, setup = false;
 	public String[] menues = {"Ply count", "Use Alpha-Beta pruning?"};
 	public int current_menu = 0;
+}
+
+class MinimaxNode {
+	public int fitness = 0;
+	char[][] board;
+	public Location play;
+	public MinimaxNode root, best;
+	public boolean is_maximizer;
+	public MinimaxNode(char[][] board, boolean is_maximizer){
+		this.is_maximizer = is_maximizer;
+		this.board = board;
+	}
 }
 
 class MinimaxCanvas extends Canvas {

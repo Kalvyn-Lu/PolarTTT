@@ -23,7 +23,7 @@ public abstract class Player {
 	public void newGame(PolarTTT game, boolean isMaximizer) {
 		//	Sets the game; this can't be done in constructor because of the circular logic problem
 		this.game = game;
-		this.isMaximizer = true;
+		this.is_maximizer = true;
 	}
 	/**
 	 * Prepare a player for a new turn. Does nothing unless overridden.
@@ -100,7 +100,7 @@ public abstract class Player {
 	private int score = 0;
 	
 	public PolarTTT game;
-	protected boolean isMaximizer;
+	protected boolean is_maximizer;
 	private boolean mousereceived;
 	private Location mouseLocation;
 }
