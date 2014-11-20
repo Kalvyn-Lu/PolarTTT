@@ -5,7 +5,6 @@ import Logic.PolarTTT;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
 
 public class MinimaxPlayer extends Player {
 
@@ -74,22 +73,27 @@ public class MinimaxPlayer extends Player {
 			setup = true;
 		}
 		frame.setVisible(false);
-		System.out.println("Number of plies: " + num_plies);
-		System.out.println("Using Alpha-Beta: " + use_alpha_beta);
 	}
 	
 	@Override
 	public Location getChoice(Location[] options) {
+		
 		char[][] board = game.theoreticalMove(options[0], '.');
-		MinimaxNode root = new MinimaxNode(board, is_maximizer), this_node = root;
+		MinimaxNode root = new MinimaxNode(board, is_maximizer);
 		
 		return bestNode(root, 0).play;
 	}
 	
 
 	public MinimaxNode bestNode(MinimaxNode current_node, int ply_number) {
+		System.out.println("Testing ply " + ply_number + " with move " +
+				(current_node.play == null
+					? "null"
+					: current_node.play.toString()));
+		
 		//	Base case- cut off search and apply the heuristic function
 		if (num_plies < ply_number) {
+			System.out.println("Found a move for " + current_node.play.toString());
 			current_node.fitness = game.dylanFitness(current_node.board);
 			return current_node;
 		}
@@ -108,18 +112,44 @@ public class MinimaxPlayer extends Player {
 				
 				//	The move was illegal. Ignore it.
 				if (theory[r][t] == '!') {
+					/*
+					for (int r1 = 0; r1 < 4; r1++) {
+						for (int c1 = 0; c1 < 12; c1++) {
+							System.out.print(theory[r1][c1]);
+						}
+						System.out.println();
+					}
+					*/
+//					System.out.println("Move at location " + potential_move.toString() + " was null.");
 					continue;
 				}
 				
 				//	Now we check the potential of this node
 				MinimaxNode potential_node = new MinimaxNode(theory, !current_node.is_maximizer);
 				potential_node.play = potential_move;
-				
+								
 				//	Compare with its best child
+				MinimaxNode best_child = bestNode(potential_node, ply_number + 1);
 				
+				//	If the child didn't help, ignore it
+				if (best_child == null) {
+					continue;
+				}
+				
+				System.out.println("Best child is not null");
+				
+				if (potential_node.is_maximizer ?
+						best_child.fitness < best_fitness : best_fitness < best_child.fitness) {
+					continue;
+				}
+				
+				System.out.println("Found a good node " + best_child.play.toString());
+				
+				//	Save the best
+				best_node = best_child;
+				best_fitness = best_child.fitness;
 			}
 		}
-		
 		//	Show what we have (might be null!)
 		return best_node;
 	}

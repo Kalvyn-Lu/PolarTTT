@@ -347,16 +347,23 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	Make a new theory
 		char[][] theory_with_move = new char[board.length][board[0].length];
+		
+		int num_plays = 0;
 		//	Populated it with the current state
 		theory_with_move = new char[board.length][board[0].length];
 		for (int r = 0; r < 4; r++) {
 			for (int t = 0; t < 12; t++) {
 				theory_with_move[r][t] = board[r][t];
+				if (board[r][t] != EMPTY ){
+					num_plays++;
+				}
 			}
 		}
 		
 		//	Mark an invalid move
-		if (theory_with_move[loc.r][loc.t] != EMPTY || !hasAdjacent(theory_with_move, loc.r, loc.t)) {
+		if (0 < num_plays && (
+				theory_with_move[loc.r][loc.t] != EMPTY
+				|| !hasAdjacent(theory_with_move, loc.r, loc.t))) {
 			theory_with_move[loc.r][loc.t] = '!';
 		}
 		else {
