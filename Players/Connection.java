@@ -9,12 +9,6 @@ package Players;
  *
  * @author ninjakl
  */
-public class Neuron {
-
-    
-    public Neuron(){
-        
-    }
-    
+public class Connection {
     
 }
