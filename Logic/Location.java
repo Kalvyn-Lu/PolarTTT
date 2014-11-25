@@ -40,4 +40,7 @@ public class Location {
 		//	Return the new list
 		return locations;
 	}
+	public String toString() {
+		return "(" + r + ", " + t + ")";
+	}
 }

@@ -3,12 +3,16 @@ package Logic;
 import java.awt.*;
 import java.awt.event.*;
 
+import Players.Player;
+
 /**
  * The Polar TTT canvas that handles both the menu and the game.
  * @author Anthony
  *
  */
-public class GameCanvas extends Canvas{
+public class GameCanvas extends Canvas {
+	
+	Point[][] points;
 	
 	/**
 	 * Constructs the game canvas
@@ -25,13 +29,24 @@ public class GameCanvas extends Canvas{
 			menu_indices[i]= 0;
 		}
 		
+		//	Set up the center of the circle
+		origin_x = (int)RADIUS_UNIT * 5;
+		origin_y = height/2;
+		
+		points = new Point[4][12];
+		for (int r = 0; r < 4; r++) {
+			for (int t = 0; t < 12; t++) {
+				points[r][t] = new Point(
+					getXPixelFromLocation(r, t),
+					getYPixelFromLocation(r, t)
+				);
+			}
+		}
+		
 		//	Set up the canvas for display
 		setBackground(BACKGROUND_COLOR);
 		setSize(width, height);
 		
-		//	Set up the center of the circle
-		origin_x = (int)RADIUS_UNIT * 5;
-		origin_y = height/2;
 		
 		//	Allow mouse input
 		this.addMouseListener(new MouseAdapter() {
@@ -40,65 +55,31 @@ public class GameCanvas extends Canvas{
 			public void mouseClicked(MouseEvent e) {
 				
 				//	Don't allow mouse events if the game hasn't started
-				if (mode == MODE_MENU) {
+				if (mode != MODE_GAME) {
 					return;
 				}
 				
 				//	The XY coordinates relative to the game window's top left corner
 				Point p = e.getPoint();
 				
-				//	Adjust to the origin
-				int x = p.x - origin_x, y = p.y - origin_y;
+				//	Track the best
+				int dist_squared = Integer.MAX_VALUE;
 				
-				//	Get the radius in pixels
-				double r = Math.sqrt(x * x + y * y);
-				
-				//	Assume we're on the farthest out loop first
-				mouse_radius = 3;
-				
-				//	Start from the inside and go out
-				for (int i = 0; i < 3; i++) {
-					
-					//	If it is within the circle, it's in!
-					//	If it's in a ring, it is in this circle but not the previous
-					//		Note 1.5- this is because we adjust by 1 (can't pick 0th ring)
-					//		and .5 (to give margins to the rings)
-					if (r < RADIUS_UNIT * ((double)i + 1.5)){
-						mouse_radius = i;
-						break;
-					}
-				}
-				
-				//	Grab the angle
-				double theta = Math.atan(-(double)y/(double)x);
-				
-				//	Save where to start the tracker
-				int start = 0;
-				
-				//	If we're in an odd quadrant
-				if (0 < x * y) {
-					
-					//	then offset by 3 spokes
-					start = 3;
-					
-					//	and then adjust the angle back to positive
-					theta += Math.PI/2.;
-				}
-				
-				//	Now see if we're below the X axis
-				if (0 < y) {
-					
-					//	Offset 6 more spokes if so
-					start += 6;
-				}
-				
-				//	Do the same trick with the rings only this time for spokes
-				for (int i = 0; i < 4; i++) {
-					
-					//	Unlike before, 0th spoke is allowed, so 0.5 is fine.
-					if (theta < THETA_UNIT * ((double)i + 0.5)) {
-						mouse_theta = (i + start) % 12;	//	Keep it wrapped aroud
-						break;
+				//	Check them all
+				for (int r = 0; r < 4; r++) {
+					for (int t = 0; t < 12; t++) {
+						
+						//	Distance formula
+						int dist = (points[r][t].x - p.x) * (points[r][t].x - p.x) + 
+								(points[r][t].y - p.y) * (points[r][t].y - p.y);
+						
+						//	Since we only care about the values of radius and theta at the end
+						//	we can simply overwrite when a new best is found.
+						if (dist < dist_squared) {
+							dist_squared = dist;
+							mouse_radius = r;
+							mouse_theta = t;
+						}
 					}
 				}
 				
@@ -176,91 +157,99 @@ public class GameCanvas extends Canvas{
 		case MODE_GAME:
 			paintGame(g2d);
 			break;
+		case MODE_INVISIBLE:
+			paintInvisible(g2d);
 		}
 	}
 	
 	/**
 	 * Paints the menu
-	 * @param g2d The Graphics
+	 * @param g The Graphics
 	 */
-	private void paintMenu(Graphics2D g2d) {
+	private void paintMenu(Graphics2D g) {
 		//	Draw the highlights first
-		g2d.setColor(Color.BLUE);
+		g.setColor(Color.BLUE);
 		for (int i = 0; i < menu_indices.length; i++) {
-			g2d.fillRect(20 + 75 * menu_indices[i], 100 * (i + 1) - 16, 75, 24);
+			g.fillRect(20 + 75 * menu_indices[i], 100 * (i + 1) - 16, 75, 24);
 		}
 		
 		//	Draw the current highlight
-		g2d.setColor(Color.GREEN);
-		g2d.fillRect(20 + 75 * menu_indices[menu_selected], 100 * (menu_selected + 1) - 16, 75, 24);
+		g.setColor(Color.GREEN);
+		g.fillRect(20 + 75 * menu_indices[menu_selected], 100 * (menu_selected + 1) - 16, 75, 24);
 		
 		//	Draw the options
-		g2d.setColor(Color.WHITE);
-		g2d.drawString("Player 1 Type", 50, 75);
+		g.setColor(Color.WHITE);
+		g.drawString("Player 1 Type", 50, 75);
 		for (int i = 0; i < menu[0].length; i++) {
-			g2d.drawString(menu[0][i], 25 + 75 * i, 100);
+			g.drawString(menu[0][i], 25 + 75 * i, 100);
 		}
-		g2d.drawString("Player 2 Type", 50, 175);
+		g.drawString("Player 2 Type", 50, 175);
 		for (int i = 0; i < menu[1].length; i++) {
-			g2d.drawString(menu[1][i], 25 + 75 * i, 200);
+			g.drawString(menu[1][i], 25 + 75 * i, 200);
+		}
+		g.drawString("Training Menu", 50, 275);
+		for (int i = 0; i < menu[2].length; i++) {
+			g.drawString(menu[2][i], 25 + 75 * i, 300);
 		}
 	}
 	
 	/**
 	 * Paints the game
-	 * @param g2d
+	 * @param g
 	 */
-	private void paintGame(Graphics2D g2d){ 
+	private void paintGame(Graphics2D g){ 
 		//	Prepare to draw
-		g2d.setColor(FOREGROUND_COLOR);
+		g.setColor(FOREGROUND_COLOR);
 		
 		//	Draw the game board's circles
-		g2d.fillOval(origin_x - 2, origin_y - 2, 4, 4);
+		g.fillOval(origin_x - 2, origin_y - 2, 4, 4);
 		for (int r = 0; r < 4; r++) {
 			int offset = (1 + r) * (int)RADIUS_UNIT;
-			g2d.drawOval(origin_x - offset, origin_y - offset , 2 * offset, 2 * offset);
+			g.drawOval(origin_x - offset, origin_y - offset , 2 * offset, 2 * offset);
 		}
 		
 		//	Draw the game board's spokes
-		g2d.drawLine(getXPixelFromLocation(3, 0), getYPixelFromLocation(3, 0),getXPixelFromLocation(3, 6), getYPixelFromLocation(3, 6));
-		g2d.drawLine(getXPixelFromLocation(3, 1), getYPixelFromLocation(3, 1),getXPixelFromLocation(3, 7), getYPixelFromLocation(3, 7));
-		g2d.drawLine(getXPixelFromLocation(3, 2), getYPixelFromLocation(3, 2),getXPixelFromLocation(3, 8), getYPixelFromLocation(3, 8));
-		g2d.drawLine(getXPixelFromLocation(3, 3), getYPixelFromLocation(3, 3),getXPixelFromLocation(3, 9), getYPixelFromLocation(3, 9));
-		g2d.drawLine(getXPixelFromLocation(3, 4), getYPixelFromLocation(3, 4),getXPixelFromLocation(3, 10), getYPixelFromLocation(3, 10));
-		g2d.drawLine(getXPixelFromLocation(3, 5), getYPixelFromLocation(3, 5),getXPixelFromLocation(3, 11), getYPixelFromLocation(3, 11));
+		g.drawLine(points[3][0].x, points[3][0].y, points[3][6].x, points[3][6].y);
+		g.drawLine(points[3][1].x, points[3][1].y, points[3][7].x, points[3][7].y);
+		g.drawLine(points[3][2].x, points[3][2].y, points[3][8].x, points[3][8].y);
+		g.drawLine(points[3][3].x, points[3][3].y, points[3][9].x, points[3][9].y);
+		g.drawLine(points[3][4].x, points[3][4].y, points[3][10].x, points[3][10].y);
+		g.drawLine(points[3][5].x, points[3][5].y, points[3][11].x, points[3][11].y);
 		
 		//	Draw the plays
-		g2d.setFont(new Font("Arial", Font.BOLD, 24));
+		g.setFont(new Font("Arial", Font.BOLD, 24));
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 12; j++) {
 				char at = game.peek(i, j);
 				if (at == PolarTTT.EMPTY) {
 					if (game.moveIsAvailable(new Location(i, j))){
-						g2d.setColor(NEUTRAL_COLOR);
-						g2d.drawOval(getXPixelFromLocation(i, j) - SYMBOL_WIDTH/2, getYPixelFromLocation(i, j) - SYMBOL_WIDTH/2, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+						g.setColor(NEUTRAL_COLOR);
+						g.drawOval(points[i][j].x - SYMBOL_WIDTH/2, points[i][j].y - SYMBOL_WIDTH/2, SYMBOL_WIDTH, SYMBOL_HEIGHT);
 					}
 				}
 				else {
-					g2d.setColor(at == PolarTTT.PLAYER1 ? P1_COLOR : P2_COLOR);
-					g2d.drawString("" + at, getXPixelFromLocation(i, j) - SYMBOL_WIDTH/2, getYPixelFromLocation(i, j) + SYMBOL_WIDTH/2);
-					//g2d.fillOval(getXPixelFromLocation(i, j), getYPixelFromLocation(i, j), SYMBOL_WIDTH, SYMBOL_HEIGHT);
+					g.setColor(at == PolarTTT.PLAYER1 ? P1_COLOR : P2_COLOR);
+					g.drawString("" + at, points[i][j].x - SYMBOL_WIDTH/2, points[i][j].y + SYMBOL_WIDTH/2);
 				}
 			}
 		}
 		
 		//	Prepare to draw the history
-		g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+		g.setFont(new Font("Arial", Font.PLAIN, 12));
 		boolean p1 = true;
 		int xloc1 = (int)RADIUS_UNIT * 10,
-			xloc2 = xloc1 + 64;
+			xloc2 = xloc1 + 36,
+			xloc3 = xloc1 + 68;
 		
-		g2d.setColor(FOREGROUND_COLOR);
-		g2d.drawString("Move History", xloc1 + 24, 48);
+		g.setColor(FOREGROUND_COLOR);
+		g.drawString("Move History", xloc1 + 24, 18);
 
-		g2d.setColor(P1_COLOR);
-		g2d.drawString("P1 History", xloc1, 64);
-		g2d.setColor(P2_COLOR);
-		g2d.drawString("P2 History", xloc2, 64);
+		g.setColor(P1_COLOR);
+		g.drawString("P1", xloc1, 34);
+		g.setColor(P2_COLOR);
+		g.drawString("P2", xloc2, 34);
+		g.setColor(FOREGROUND_COLOR);
+		g.drawString("Fitness", xloc3, 34);
 		int i;
 		
 		//	Draw the history
@@ -272,48 +261,72 @@ public class GameCanvas extends Canvas{
 				break;
 			}
 			
-			g2d.setColor(p1 ? P1_COLOR: P2_COLOR);
-			g2d.drawString("(" + l.r +  ", " + l.t + ")", p1 ? xloc1 : xloc2, 16 * (i/2) + 96);
+			g.setColor(p1 ? P1_COLOR: P2_COLOR);
+			g.drawString(l.toString(), p1 ? xloc1 : xloc2, 10 * i + 46);
+			
+			int f = game.getNthFitness(i);
+			g.setColor(f == 0 ? FOREGROUND_COLOR : f < 0 ? P2_COLOR : P1_COLOR);
+			g.drawString(" " + f, xloc3 + (p1 ? 0 : 30), 10 * i + 46);
 		}
 		
 		//	Draw the stats
-		g2d.setColor(FOREGROUND_COLOR);
-		g2d.drawString("Game Information", 650, 48);
-		g2d.drawString("Player 1 Name:", 675, 96);
-		g2d.drawString("Player 2 Name:", 675, 144);
+		g.setColor(FOREGROUND_COLOR);
+		g.drawString("Game Information", 650, 18);
+		g.drawString("Player 1 Name:", 675, 66);
+		g.drawString("Player 2 Name:", 675, 114);
 		
 		String p1name = game.getPlayerName(PolarTTT.PLAYER1),
 			p2name = game.getPlayerName(PolarTTT.PLAYER2);
-		
-		//	Draw the fitness
-		g2d.drawString("Fitness This Turn:", 650, 270);
-		g2d.setColor(P1_COLOR);
-		g2d.drawString("" + game.fitness(PolarTTT.PLAYER1), 675, 290);
-		g2d.setColor(P2_COLOR);
-		g2d.drawString("" + game.fitness(PolarTTT.PLAYER2), 675, 310);
 
 		//	Draw the status with our foreground
-		g2d.setColor(FOREGROUND_COLOR);
+		g.setColor(FOREGROUND_COLOR);
 		switch (status) {
 		case STATUS_IN_PROGRESS:
-			g2d.setColor(FOREGROUND_COLOR);
-			g2d.drawString("Turn Number: " + (1 + i), 675, 224);
-			g2d.setColor(i%2 == 0 ? P1_COLOR : P2_COLOR);
-			g2d.drawString((i%2 == 0 ? p1name : p2name) + " to play.", 650, 256);
+			g.setColor(FOREGROUND_COLOR);
+			g.drawString("Turn Number: " + (1 + i), 675, 194);
+			g.setColor(i%2 == 0 ? P1_COLOR : P2_COLOR);
+			g.drawString((i%2 == 0 ? p1name : p2name) + " to play.", 650, 226);
 			break;
 		case STATUS_WON:case STATUS_TIE:
-			g2d.drawString("Results:", 200, 540);
-			g2d.drawString("Enter to restart. Escape to quit.", 270, 560);
-			g2d.setColor(status_color);
-			g2d.drawString(information, 250, 540);
+			g.drawString("Results:", 200, 540);
+			g.drawString("Enter to restart. Escape to quit.", 270, 530);
+			g.setColor(status_color);
+			g.drawString(information, 250, 540);
 			break;
 		}
 		
-		g2d.setColor(P1_COLOR);
-		g2d.drawString(p1name, 660, 112);
-		g2d.setColor(P2_COLOR);
-		g2d.drawString(p2name, 660, 160);
+		g.setColor(P1_COLOR);
+		g.drawString(p1name, 660, 82);
+		g.setColor(P2_COLOR);
+		g.drawString(p2name, 660, 130);
 		
+	}
+	
+	private void paintInvisible(Graphics2D g){
+		int games = game.gameCount();
+		if (games == 0) {
+			g.setColor(FOREGROUND_COLOR);
+			g.drawString("Running first batch of games... ", 200, 200);
+			return;
+		}
+		
+		int p1wins = p1.getScore();
+		int p2wins = p2.getScore();
+		int ties = game.tieCount();
+		g.setColor(FOREGROUND_COLOR);
+		g.drawString("Number of games: ", 200, 200);
+		g.drawString("" + games, 350, 200);
+		g.drawString("Number of ties: ", 200, 320);
+		g.drawString("" + ties, 350, 320);
+		g.drawString((100 * ties / games) + "%", 400, 320);
+		g.setColor(P1_COLOR);
+		g.drawString(p1.getName() + " wins: ", 200, 240);
+		g.drawString("" + p1wins, 350, 240);
+		g.drawString((100 * p1wins / games) + "%", 400, 240);
+		g.setColor(P2_COLOR);
+		g.drawString(p2.getName() + " wins: ", 200, 280);
+		g.drawString("" + p2wins, 350, 280);
+		g.drawString((100 * p2wins / games) + "%", 400, 280);
 	}
 	
 	/**
@@ -352,6 +365,14 @@ public class GameCanvas extends Canvas{
 		status = STATUS_IN_PROGRESS;
 		repaint();
 	}
+	
+	public void setInvisible(Player p1, Player p2) {
+		this.p1 = p1;
+		this.p2 = p2;
+		mode = MODE_INVISIBLE;
+		repaint();
+	}
+	private Player p1, p2;
 	
 	/**
 	 * Get the current mode
@@ -415,15 +436,15 @@ public class GameCanvas extends Canvas{
 	private PolarTTT game;
 	
 	//	Menues
-	private final String[]
-			Player1Types = {"Human", "Random", "C"},
-			Player2Types = {"Human", "Random", "C"};
-	private String[][] menu = {Player1Types, Player2Types};
+	private final String[] PlayerTypes = {"Human", "Random", "Greedy", "Minimax", "Classifier", "ANN"},
+			FastRun = {"One Game", "Bulk Training"};
+	private String[][] menu = {PlayerTypes, PlayerTypes, FastRun};
 	
 	//	Modes determine which game is to be played
 	private int mode;
 	public static final int MODE_MENU = 0;
 	public static final int MODE_GAME = 1;
+	public static final int MODE_INVISIBLE = 2;
 	
 	//	Use this information to display end conditions
 	private int status;
