@@ -1,20 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package Players;
 
-/**
- *
- * @author ninjakl
- */
-public class Neuron {
+import Logic.*;
+import java.util.ArrayList;
 
+public class Neuron {
+    
+    char[][] state;         // Input   
+    int expectedOutcome;    // Output
     
     public Neuron(){
         
     }
-    
-    
 }
