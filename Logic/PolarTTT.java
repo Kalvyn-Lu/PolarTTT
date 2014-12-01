@@ -80,8 +80,8 @@ public class PolarTTT extends KeyAdapter{
 				
 				num_games++;
 
-				players[0].endGame(board, history);
-				players[1].endGame(board, history);
+				players[0].endGame(board, history, fitnesses);
+				players[1].endGame(board, history, fitnesses);
 				
 				
 				if (isVisible) {
@@ -256,7 +256,7 @@ public class PolarTTT extends KeyAdapter{
 			
 			//	This overwrites players so make sure the mode is right
 			if (canvas.getMode() == GameCanvas.MODE_MENU){
-										
+
 				//	Assign each player from the provided menu selections
 				for (int i = 0; i < 2; i++) {
 					switch (canvas.menu_indices[i]){
@@ -278,14 +278,17 @@ public class PolarTTT extends KeyAdapter{
 						
 					case 3:
 						players[i] = new MinimaxPlayer();
+						fitness_mode = DYLAN_FITNESS;
 						break;
 						
 					case 4:
-						players[i] = new ClassifierPlayer();
+						players[i] = new MinimaxPlayer();
+						fitness_mode = CLASSIFIER_FITNESS;
 						break;
 						
 					case 5:
-						players[i] = new ANNPlayer();
+						players[i] = new MinimaxPlayer();
+						fitness_mode = ANN_FITNESS;
 						break;
 					
 					//	This should only happen during test stage
@@ -378,7 +381,15 @@ public class PolarTTT extends KeyAdapter{
 	public int fitness(char player) {
 		return fitness;
 	}
-	public int dylanFitness(char[][] board) {
+	public int getFitness(char[][] board) {
+		switch (fitness_mode) {
+		case DYLAN_FITNESS:
+			return dylanFitness(board);
+		default:
+			return 0;
+		}
+	}
+	private int dylanFitness(char[][] board) {
 		//	Todd's edit:
 		//	Not the most efficient check but allows for AI to account for winning states
 		for (int r = 0; r < 4; r++) {
@@ -490,7 +501,7 @@ public class PolarTTT extends KeyAdapter{
 		}
 		return fitness;
 	}
-	public Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
+	private Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
 	{
 		Location[] locations = new Location[4];
 		for(int a = 0; a<4; a++)
@@ -941,4 +952,9 @@ public class PolarTTT extends KeyAdapter{
 	private int fitnesses[];
 	private int turn, fitness, num_games = 0, num_ties = 0;
 	private boolean gameon, isVisible = true;
+	public static final int
+		DYLAN_FITNESS = 0,
+		ANN_FITNESS = 1,
+		CLASSIFIER_FITNESS = 2;
+	public int fitness_mode = DYLAN_FITNESS;
 }
