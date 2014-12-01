@@ -347,8 +347,8 @@ public class PolarTTT extends KeyAdapter{
 
 				
 				
-				if (canvas.menu_indices[2] == 1) {
-					if (canvas.menu_indices[0] == 0 || canvas.menu_indices[1] == 0) {
+				if (canvas.menu_indices[0] == 1) {
+					if (canvas.menu_indices[1] == 0) {
 						throw new RuntimeException("Humans can't play in bulk!");
 					}
 					

@@ -467,7 +467,7 @@ public class GameCanvas extends Canvas {
 	private String[][] menu = 
 		{
 			{"Human", "Bulk Training"},
-			{"Human", "Random", "Greedy", "Minimax", "Classifier", "ANN"},
+			{"Human", "Random", "Greedy", "Dylan", "Classifier", "ANN"},
 			{"0"},
 			{"Yes Yes Yes!", "No No No!"},
 			{"Yes Yes Yes!", "No No No!"}

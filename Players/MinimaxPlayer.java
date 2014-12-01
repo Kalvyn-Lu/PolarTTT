@@ -122,6 +122,9 @@ public class MinimaxPlayer extends Player {
 	public String getName() {
 		String name = "Minimax ";
 		switch (game.fitness_mode) {
+		case PolarTTT.DYLAN_FITNESS:
+			name = "Dylan's ";
+			break;
 		case PolarTTT.CLASSIFIER_FITNESS:
 			name = "Classifer ";
 			break;
