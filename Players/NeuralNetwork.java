@@ -11,13 +11,29 @@ public class NeuralNetwork {
     public NeuralNetwork(){
         neurons = new ArrayList<>();
     }
-    //Adds neuron to NeuralNetwork
+    /**
+     * 
+     * @param n The neuron to be added to the network 
+     */
     void addNeuron(Neuron n){
         neurons.add(n);
     }
     
+    /**
+     * 
+     * @param from The neuron for the connection to be made from
+     * @param to   The neuron for the connection to be made to
+     */
     void connect(Neuron from, Neuron to){
         Random randFloat = new Random();                       //Generates random number
         Edge newEdge = new Edge(from,to,randFloat.nextFloat());//Connect two neurons with a random weight
+    }
+    
+    public void feedForward(){
+        
+    }
+    
+    public void backProp(){
+        
     }
 }
