@@ -6,57 +6,119 @@ public class MinimaxPlayer extends Player {
 	
 	@Override
 	public Location getChoice(Location[] options) {
-		turn++;
-		
-		char[][] board = game.theoreticalMove(options[0], '.');
-
-		MMNode best = bestnode(board, new MMNode(is_maximizer), 0);
-		
-		if (best == null ) {
-			System.out.println("well, fuck");
-			System.exit(0);
-			return null;
-		}
-		
-		return best.move;
+		return makeMove(game.theoreticalMove(options[0], '.'));
 	}
 	
-	private MMNode bestnode(char[][] board, MMNode node, int ply) {
-		if (ply == num_plies) {
-			node.fitness = game.getFitness(board);
-			return node;
+	@Override
+	public String getName() {
+		String name = "Minimax ";
+		switch (game.fitness_mode) {
+		case PolarTTT.DYLAN_FITNESS:
+			name = "Dylan's ";
+			break;
+		case PolarTTT.CLASSIFIER_FITNESS:
+			name = "Classifer ";
+			break;
+		case PolarTTT.ANN_FITNESS:
+			name = "RoxANNe ";
+			break;
 		}
-		
-		Location[] moves = findAvailableMoves(board);
-		
-		if (moves.length == 0) {
-			return node;
+		return name + num_plies + "p" + (use_pruning ? "+AB" : "");
+	}
+	
+	int turn = -1;
+	public int num_plies = 1;
+	public boolean use_pruning, setup = false;
+	public String[] menues = {"Ply count", "Use Alpha-Beta pruning?"};
+	public int current_menu = 0;
+	
+	public int minimax(char[][]state, int depth, boolean is_maxer) {
+		Location[] childs;
+		if (depth == 0 || (childs = findAvailableMoves(state)).length == 0) {
+			return game.getFitness(state);
 		}
-		
-		MMNode[] children = new MMNode[moves.length];
-		for (int i = 0; i < moves.length; i++) {
-			children[i] = new MMNode(moves[i], !node.is_maxer);
+		int bestVal = 0;
+		if (is_maxer) {
+			bestVal = Integer.MIN_VALUE;
+			for (Location child : childs) {
+				// do it
+				domove(state, child, is_maxer);
+				
+				
+				int val = minimax(state, depth - 1, !is_maxer);
+				
+				// undo it
+				undomove(state, child);
+				
+				if (bestVal < val) {
+					bestVal = val;
+				}
+			}
 		}
-		
-		MMNode best = null;
-		int best_fit = (node.is_maxer ? Integer.MIN_VALUE : Integer.MAX_VALUE);
-		
-		for (int i = 0; i < children.length; i++) {
-			board[moves[i].r][moves[i].t] = (node.is_maxer ? PolarTTT.PLAYER2 : PolarTTT.PLAYER1);
-			
-			MMNode test = bestnode(board, children[i], ply + 1);
-			
-			if (node.is_maxer ? best_fit < test.fitness : test.fitness < best_fit) {
-				best_fit = test.fitness;
-				best = test;
+		else {
+			bestVal = Integer.MAX_VALUE;
+			for (Location child : childs) {
+				//	do it
+				domove(state, child, is_maxer);
+				
+				int val = minimax(state, depth - 1, !is_maxer);
+				
+				//undo it
+				undomove(state, child);
+				
+				if (bestVal > val) {
+					bestVal = val;
+				}
 			}
 		}
 		
-		return best;
+		return bestVal;
+	}
+		
+	public Location makeMove(char[][]state) {
+		Location[] childs = findAvailableMoves(state);
+		System.out.println(childs.length);
+		if (childs.length == 0) {
+			return null;
+		}
+		Location bestChild = childs[0];
+		
+		//	do it
+		domove(state, childs[0], is_maximizer);
+		
+		int bestVal = minimax(state, num_plies, is_maximizer);
+		
+		// undo it
+		undomove(state, childs[0]);
+		
+		for (int i = 1; i < childs.length; i++) {
+			
+			//	do it
+			domove(state, childs[i], is_maximizer);
+			
+			int childval = minimax(state, num_plies, is_maximizer);
+			
+			// undo it
+			undomove(state, childs[i]);
+			
+			if (childval > bestVal) {
+				bestChild = childs[i];
+				bestVal = childval;
+			}
+		}
+		
+		return bestChild;
 	}
 	
+	public void domove(char[][] state, Location l, boolean is_maxer) {
+		state[l.r][l.t] = is_maxer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2;
+	}
+	public void undomove(char[][] state, Location l) {
+		state[l.r][l.t] = PolarTTT.EMPTY;
+	}
 	
-	private Location[] findAvailableMoves(char[][] board){
+	public Location[] findAvailableMoves(char[][] board){
+		Location[] available_locations_l;
 		boolean[][] available_locations = new boolean[4][12];
 		
 		//	Track how many are available
@@ -89,18 +151,21 @@ public class MinimaxPlayer extends Player {
 			}
 		}
 		
-		Location[] available_locations_l = new Location[count];
-		for (int r = 0; r < 4; r++){
-			for (int t = 0; t < 12; t++){
-				if (available_locations[r][t]){
-					available_locations_l[--count] = new Location(r, t);
+		if (count == 0) {
+			available_locations_l = null;
+		}
+		else {
+			available_locations_l = new Location[count];
+			for (int r = 0; r < 4; r++){
+				for (int t = 0; t < 12; t++){
+					if (available_locations[r][t]){
+						available_locations_l[--count] = new Location(r, t);
+					}
 				}
 			}
 		}
-		
 		return available_locations_l;
 	}
-
 	
 	private boolean hasAdjacent(char[][] board, int r, int t){
 		
@@ -117,43 +182,5 @@ public class MinimaxPlayer extends Player {
 		//	None adjacent
 		return false;
 	}
-	
-	@Override
-	public String getName() {
-		String name = "Minimax ";
-		switch (game.fitness_mode) {
-		case PolarTTT.DYLAN_FITNESS:
-			name = "Dylan's ";
-			break;
-		case PolarTTT.CLASSIFIER_FITNESS:
-			name = "Classifer ";
-			break;
-		case PolarTTT.ANN_FITNESS:
-			name = "RoxANNe ";
-			break;
-		}
-		return name + num_plies + "p" + (use_pruning ? "+AB" : "");
-	}
-	
-	int turn = -1;
-	public int num_plies = 1;
-	public boolean use_pruning, setup = false;
-	public String[] menues = {"Ply count", "Use Alpha-Beta pruning?"};
-	public int current_menu = 0;
-}
 
-class MMNode {
-	boolean is_maxer;
-	int fitness;
-	Location move;
-	MMNode(boolean is_maxer) {
-		this.is_maxer = is_maxer;
-		fitness = 0;		
-	}
-	
-	MMNode(Location move, boolean is_maxer) {
-		this.is_maxer = is_maxer;
-		this.move = move;
-		fitness = 0;
-	}
 }
