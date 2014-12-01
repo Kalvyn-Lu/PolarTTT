@@ -7,8 +7,128 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class MinimaxPlayer extends Player {
+	
+	@Override
+	public Location getChoice(Location[] options) {
+		turn++;
+		
+		char[][] board = game.theoreticalMove(options[0], '.');
 
+		MMNode best = bestnode(board, new MMNode(is_maximizer), 0);
+		
+		if (best == null ) {
+			System.out.println("well, fuck");
+			System.exit(0);
+			return null;
+		}
+		
+		return best.move;
+	}
+	
+	private MMNode bestnode(char[][] board, MMNode node, int ply) {
+		if (ply == num_plies) {
+			node.fitness = game.getFitness(board);
+			return node;
+		}
+		
+		Location[] moves = findAvailableMoves(board);
+		
+		if (moves.length == 0) {
+			return node;
+		}
+		
+		MMNode[] children = new MMNode[moves.length];
+		for (int i = 0; i < moves.length; i++) {
+			children[i] = new MMNode(moves[i], !node.is_maxer);
+		}
+		
+		MMNode best = null;
+		int best_fit = (node.is_maxer ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+		
+		for (int i = 0; i < children.length; i++) {
+			board[moves[i].r][moves[i].t] = (node.is_maxer ? PolarTTT.PLAYER2 : PolarTTT.PLAYER1);
+			
+			MMNode test = bestnode(board, children[i], ply + 1);
+			
+			if (node.is_maxer ? best_fit < test.fitness : test.fitness < best_fit) {
+				best_fit = test.fitness;
+				best = test;
+			}
+		}
+		
+		return best;
+	}
+	
+	
+	private Location[] findAvailableMoves(char[][] board){
+		boolean[][] available_locations = new boolean[4][12];
+		
+		//	Track how many are available
+		int count = 0;
+		
+		//	Check every spot
+		for (int i = 0; i < 4; i++){
+			for (int j = 0; j < 12; j++){
 
+				//	Anywhere is legal on first turn
+				if (turn == 0) {
+					available_locations[i][j] = true;
+				}
+				
+				//	If the spot is taken then it's not available
+				else if (board[i][j] != '.'){
+					available_locations[i][j] = false;
+				}
+				
+				
+				//	Spot is available if it has an adjacent taken
+				else {
+					available_locations[i][j] = hasAdjacent(board, i, j);
+				}
+				
+				//	Keep count
+				if (available_locations[i][j]) {
+					count++;
+				}
+			}
+		}
+		
+		Location[] available_locations_l = new Location[count];
+		for (int r = 0; r < 4; r++){
+			for (int t = 0; t < 12; t++){
+				if (available_locations[r][t]){
+					available_locations_l[--count] = new Location(r, t);
+				}
+			}
+		}
+		
+		return available_locations_l;
+	}
+
+	
+	private boolean hasAdjacent(char[][] board, int r, int t){
+		
+		//	Get all neighbors
+		Location[] neighbors = new Location(r, t).adjacentLocations();
+		 
+		//	Check all neighbors
+		for (Location location : neighbors){
+			if (board[location.r][location.t] != PolarTTT.EMPTY){
+				return true;
+			}
+		}
+		
+		//	None adjacent
+		return false;
+	}
+
+	
+	
+	@Override
+	public String getName() {
+		return "Minimax " + num_plies + "p" + (use_alpha_beta ? "+AB" : "");
+	}
+	
 	public void newGame(PolarTTT game, boolean isMaximizer) {
 		super.newGame(game, isMaximizer);
 		frame = new Frame("Minimax Menu");
@@ -74,91 +194,8 @@ public class MinimaxPlayer extends Player {
 		}
 		frame.setVisible(false);
 	}
-	
-	@Override
-	public Location getChoice(Location[] options) {
-		
-		char[][] board = game.theoreticalMove(options[0], '.');
-		MinimaxNode root = new MinimaxNode(board, is_maximizer);
-		
-		return bestNode(root, 0).play;
-	}
-	
 
-	public MinimaxNode bestNode(MinimaxNode current_node, int ply_number) {
-		System.out.println("Testing ply " + ply_number + " with move " +
-				(current_node.play == null
-					? "null"
-					: current_node.play.toString()));
-		
-		//	Base case- cut off search and apply the heuristic function
-		if (num_plies < ply_number) {
-			System.out.println("Found a move for " + current_node.play.toString());
-			current_node.fitness = game.dylanFitness(current_node.board);
-			return current_node;
-		}
-		
-		//	Prepare the worst
-		MinimaxNode best_node = null;
-		int best_fitness = (is_maximizer ? Integer.MIN_VALUE : Integer.MAX_VALUE);
-		
-		//	Go through all possible moves
-		for (int r = 0; r < 4; r++) {
-			for (int t = 0; t < 12; t++) {
-				Location potential_move = new Location(r, t);
-				char[][] theory = game.theoreticalMove(
-						current_node.board, potential_move,
-						(current_node.is_maximizer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2));
-				
-				//	The move was illegal. Ignore it.
-				if (theory[r][t] == '!') {
-					/*
-					for (int r1 = 0; r1 < 4; r1++) {
-						for (int c1 = 0; c1 < 12; c1++) {
-							System.out.print(theory[r1][c1]);
-						}
-						System.out.println();
-					}
-					*/
-//					System.out.println("Move at location " + potential_move.toString() + " was null.");
-					continue;
-				}
-				
-				//	Now we check the potential of this node
-				MinimaxNode potential_node = new MinimaxNode(theory, !current_node.is_maximizer);
-				potential_node.play = potential_move;
-								
-				//	Compare with its best child
-				MinimaxNode best_child = bestNode(potential_node, ply_number + 1);
-				
-				//	If the child didn't help, ignore it
-				if (best_child == null) {
-					continue;
-				}
-				
-				System.out.println("Best child is not null");
-				
-				if (potential_node.is_maximizer ?
-						best_child.fitness < best_fitness : best_fitness < best_child.fitness) {
-					continue;
-				}
-				
-				System.out.println("Found a good node " + best_child.play.toString());
-				
-				//	Save the best
-				best_node = best_child;
-				best_fitness = best_child.fitness;
-			}
-		}
-		//	Show what we have (might be null!)
-		return best_node;
-	}
-	
-	@Override
-	public String getName() {
-		return "Minimax " + num_plies + "p" + (use_alpha_beta ? "+AB" : "");
-	}
-	
+	int turn = -1;
 	private Frame frame;
 	private MinimaxCanvas canvas;
 	public int num_plies = 1;
@@ -167,15 +204,19 @@ public class MinimaxPlayer extends Player {
 	public int current_menu = 0;
 }
 
-class MinimaxNode {
-	public int fitness = 0;
-	char[][] board;
-	public Location play;
-	public MinimaxNode root, best;
-	public boolean is_maximizer;
-	public MinimaxNode(char[][] board, boolean is_maximizer){
-		this.is_maximizer = is_maximizer;
-		this.board = board;
+class MMNode {
+	boolean is_maxer;
+	int fitness;
+	Location move;
+	MMNode(boolean is_maxer) {
+		this.is_maxer = is_maxer;
+		fitness = 0;		
+	}
+	
+	MMNode(Location move, boolean is_maxer) {
+		this.is_maxer = is_maxer;
+		this.move = move;
+		fitness = 0;
 	}
 }
 
@@ -196,4 +237,5 @@ class MinimaxCanvas extends Canvas {
 		g.setColor(Color.LIGHT_GRAY);
 		g.fillRect(98, p.current_menu == 0 ? 100 : 200, 50, 3);
 	}
+	
 }

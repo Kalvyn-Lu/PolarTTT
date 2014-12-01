@@ -35,7 +35,7 @@ public abstract class Player {
 	 * @param board The game board at the final state
 	 * @param history The final move sequence. Note that players alternate move in this history sequence.
 	 */
-	public void endGame(char[][] board, Location[] history) {
+	public void endGame(char[][] board, Location[] history, int[] fitness) {
 		
 	}
 	/**

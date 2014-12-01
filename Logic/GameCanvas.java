@@ -411,10 +411,7 @@ public class GameCanvas extends Canvas {
 	
 	//	The difference in radius between the rings
 	private final double RADIUS_UNIT = 50.0;
-	
-	//	The difference in angle between spokes
-	private final static double THETA_UNIT = 0.5253;
-	
+		
 	//	The size of the graphic to be used to mark the spot
 	private final int SYMBOL_WIDTH = 16, SYMBOL_HEIGHT = 16;
 	
