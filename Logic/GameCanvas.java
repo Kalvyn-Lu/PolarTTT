@@ -26,8 +26,9 @@ public class GameCanvas extends Canvas {
 		menu_selected = 0;
 		menu_indices = new int[menu.length];
 		for (int i = 0; i < menu_indices.length; i++) {
-			menu_indices[i]= 0;
+			menu_indices[i] = 0;
 		}
+		menu_indices[2] = 1;
 		
 		//	Set up the center of the circle
 		origin_x = (int)RADIUS_UNIT * 5;
@@ -125,10 +126,16 @@ public class GameCanvas extends Canvas {
 	 * Handles right arrow
 	 */
 	public void moveright() {
-		//	If we can move right, move right
-		if (menu_indices[menu_selected] < menu[menu_selected].length - 1) {
-			menu_indices[menu_selected]++;
+		if (menu_selected == 2) {
+			menu_indices[2]++;
 			repaint();
+		}
+		else {
+			//	If we can move right, move right
+			if (menu_indices[menu_selected] < menu[menu_selected].length - 1) {
+				menu_indices[menu_selected]++;
+				repaint();
+			}
 		}
 	}
 	
@@ -136,10 +143,18 @@ public class GameCanvas extends Canvas {
 	 * Handles the left arrow
 	 */
 	public void moveleft(){
-		//	If we can move left, move left
-		if (0 < menu_indices[menu_selected]) {
-			menu_indices[menu_selected]--;
-			repaint();
+		if (menu_selected == 2) {
+			if (0 < menu_indices[2]) {
+				menu_indices[2]--;
+				repaint();
+			}
+		}
+		else {
+			//	If we can move left, move left
+			if (0 < menu_indices[menu_selected]) {
+				menu_indices[menu_selected]--;
+				repaint();
+			}
 		}
 	}
 	
@@ -170,26 +185,34 @@ public class GameCanvas extends Canvas {
 		//	Draw the highlights first
 		g.setColor(Color.BLUE);
 		for (int i = 0; i < menu_indices.length; i++) {
-			g.fillRect(20 + 75 * menu_indices[i], 100 * (i + 1) - 16, 75, 24);
+			if (i == 2) {
+				g.fillRect(20, 284, 75, 24);
+			}
+			else {
+				g.fillRect(20 + 75 * menu_indices[i], 100 * (i + 1) - 16, 75, 24);
+			}
 		}
 		
 		//	Draw the current highlight
 		g.setColor(Color.GREEN);
-		g.fillRect(20 + 75 * menu_indices[menu_selected], 100 * (menu_selected + 1) - 16, 75, 24);
+		if (menu_selected == 2) {
+			g.fillRect(20, 284, 75, 24);
+		}
+		else {
+			g.fillRect(20 + 75 * menu_indices[menu_selected], 100 * (menu_selected + 1) - 16, 75, 24);
+		}
 		
 		//	Draw the options
 		g.setColor(Color.WHITE);
-		g.drawString("Player 1 Type", 50, 75);
-		for (int i = 0; i < menu[0].length; i++) {
-			g.drawString(menu[0][i], 25 + 75 * i, 100);
-		}
-		g.drawString("Player 2 Type", 50, 175);
-		for (int i = 0; i < menu[1].length; i++) {
-			g.drawString(menu[1][i], 25 + 75 * i, 200);
-		}
-		g.drawString("Training Menu", 50, 275);
-		for (int i = 0; i < menu[2].length; i++) {
-			g.drawString(menu[2][i], 25 + 75 * i, 300);
+		
+		for (int x = 0; x < menu.length; x++) {
+			g.drawString(menu_titles[x], 50, 75 + 100 * x);
+			if (x != 2) for (int i = 0; i < menu[x].length; i++) {
+				g.drawString(menu[x][i], 25 + 75 * i, 100 + 100 * x);
+			}
+			else {
+				g.drawString("" + menu_indices[x], 25, 300);
+			}
 		}
 	}
 	
@@ -265,8 +288,14 @@ public class GameCanvas extends Canvas {
 			g.drawString(l.toString(), p1 ? xloc1 : xloc2, 10 * i + 46);
 			
 			int f = game.getNthFitness(i);
-			g.setColor(f == 0 ? FOREGROUND_COLOR : f < 0 ? P2_COLOR : P1_COLOR);
-			g.drawString(" " + f, xloc3 + (p1 ? 0 : 30), 10 * i + 46);
+			if (f == PolarTTT.WIN_WEIGHT) {
+				g.setColor(FOREGROUND_COLOR);
+				g.drawString(" Win!", xloc3 + (p1 ? 0 : 30), 10 * i + 46);
+			}
+			else {
+				g.setColor(f == 0 ? FOREGROUND_COLOR : f < 0 ? P2_COLOR : P1_COLOR);
+				g.drawString(" " + f, xloc3 + (p1 ? 0 : 30), 10 * i + 46);
+			}
 		}
 		
 		//	Draw the stats
@@ -432,10 +461,23 @@ public class GameCanvas extends Canvas {
 	//	The game this gui interfaces with
 	private PolarTTT game;
 	
-	//	Menues
-	private final String[] PlayerTypes = {"Human", "Random", "Greedy", "Minimax", "Classifier", "ANN"},
-			FastRun = {"One Game", "Bulk Training"};
-	private String[][] menu = {PlayerTypes, PlayerTypes, FastRun};
+	//	Menu
+	private String[] menu_titles = 
+		{
+			"Player 1 Type:",
+			"Player 2 Type:",
+			"Number of Plies",
+			"Prune?",
+			"Keep Player Order?"
+		};
+	private String[][] menu = 
+		{
+			{"Human", "Bulk Training"},
+			{"Human", "Random", "Greedy", "Dylan", "Classifier", "ANN"},
+			{"0"},
+			{"Yes Yes Yes!", "No No No!"},
+			{"Yes Yes Yes!", "No No No!"}
+		};
 	
 	//	Modes determine which game is to be played
 	private int mode;

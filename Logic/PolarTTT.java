@@ -11,6 +11,15 @@ import Players.*;
  */
 public class PolarTTT extends KeyAdapter{
 	
+	//	We're doing this
+	private int classifyFitness(char[][] board) {
+		return 0;
+	}
+	
+	//	Kalvyn should do this
+	private int neuralFitness(char[][]board) {
+		return 0;
+	}
 	
 	/**
 	 * Starts the game from scratch
@@ -156,7 +165,7 @@ public class PolarTTT extends KeyAdapter{
 			history[turn] = location;
 			
 			//	Evaluate the players' fitnesses;
-			fitness = dylanFitness(board);
+			fitness = getFitness(board);
 			fitnesses[turn] = fitness;
 			
 			//	Rotate turn count and thus give other player a turn
@@ -256,50 +265,90 @@ public class PolarTTT extends KeyAdapter{
 			
 			//	This overwrites players so make sure the mode is right
 			if (canvas.getMode() == GameCanvas.MODE_MENU){
-
-				//	Assign each player from the provided menu selections
-				for (int i = 0; i < 2; i++) {
-					switch (canvas.menu_indices[i]){
+				
+				switch (canvas.menu_indices[1]){
 
 					//	The human player is the first option
 					case 0:
-						players[i] = new HumanPlayer();
+						players[1] = new HumanPlayer();
 						break;
 					
 					//	The random player is the second option
 					case 1:
-						players[i] = new RandomPlayer();
+						players[1] = new RandomPlayer();
 						break;
 
 					//	The greedy player is the third option
 					case 2:
-						players[i] = new GreedyPlayer();
+						players[1] = new GreedyPlayer();
 						break;
 						
 					case 3:
-						players[i] = new MinimaxPlayer();
+						players[1] = new MinimaxPlayer();
 						fitness_mode = DYLAN_FITNESS;
 						break;
 						
 					case 4:
-						players[i] = new MinimaxPlayer();
+						players[1] = new MinimaxPlayer();
 						fitness_mode = CLASSIFIER_FITNESS;
 						break;
 						
 					case 5:
-						players[i] = new MinimaxPlayer();
+						players[1] = new MinimaxPlayer();
 						fitness_mode = ANN_FITNESS;
 						break;
 					
 					//	This should only happen during test stage
 					default:
-						System.out.println(canvas.menu_indices[i]);
+						System.out.println(canvas.menu_indices[1]);
 						System.exit(0);
-					}
 				}
 				
-				if (canvas.menu_indices[2] == 1) {
-					if (canvas.menu_indices[0] == 0 || canvas.menu_indices[1] == 0) {
+				if (players[1] instanceof MinimaxPlayer) {
+					((MinimaxPlayer)players[1]).num_plies = canvas.menu_indices[2];
+					((MinimaxPlayer)players[1]).use_pruning = canvas.menu_indices[3] == 0;
+				}
+				
+				if (canvas.menu_indices[0] == 0) {
+					players[0] = new HumanPlayer();
+				}
+				//	Copy-pasted code for assigning the first player to match the second
+				else switch (canvas.menu_indices[1]){
+
+					case 0:
+						players[0] = new HumanPlayer();
+						break;
+					
+					case 1:
+						players[0] = new RandomPlayer();
+						break;
+	
+					case 2:
+						players[0] = new GreedyPlayer();
+						break;
+						
+					case 3:
+						players[0] = new MinimaxPlayer();
+						break;
+						
+					case 4:
+						players[0] = new MinimaxPlayer();
+						break;
+						
+					case 5:
+						players[0] = new MinimaxPlayer();
+						break;
+					
+					//	This should only happen during test stage
+					default:
+						System.out.println(canvas.menu_indices[0]);
+						System.exit(0);
+				}
+
+				
+				
+				if (canvas.menu_indices[0] == 1) {
+					if (canvas.menu_indices[1] == 0) {
 						throw new RuntimeException("Humans can't play in bulk!");
 					}
 					
@@ -385,10 +434,15 @@ public class PolarTTT extends KeyAdapter{
 		switch (fitness_mode) {
 		case DYLAN_FITNESS:
 			return dylanFitness(board);
+		case CLASSIFIER_FITNESS:
+			return classifyFitness(board);
+		case ANN_FITNESS:
+			return neuralFitness(board);
 		default:
 			return 0;
 		}
 	}
+	
 	private int dylanFitness(char[][] board) {
 		//	Todd's edit:
 		//	Not the most efficient check but allows for AI to account for winning states
