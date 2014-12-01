@@ -4,12 +4,10 @@ import Logic.*;
 import java.util.ArrayList;
 
 public class Neuron {
-    
-    float[] input;         // Input   
-    float expectedOutcome;  // Output
+      
     Edge[] edges;  //Connections to nodes
     
-    char[][] lastInput;     //Last input for Error check
+    float[] lastInput;     //Last input for Error check
     float lastOutput;       //Last Output for Error check
     
     public Neuron(){
@@ -27,5 +25,23 @@ public class Neuron {
                 break;
             }
         }
+    }
+    /**
+     * sets lastInput to input
+     * sets lastOutput to output
+     * 
+     * @param input input of the node
+     * @return the output of the node : dot product of input and edge weights 
+     */
+    public float output(float[] input){
+        float output = 0;
+        for(int i = 0; i < input.length; i++){
+            for(int j = 0; j < edges.length; j++){
+                output = input[i] * edges[j].weight;
+            }
+        }
+        lastInput = input;
+        lastOutput = output;
+        return output;
     }
 }
