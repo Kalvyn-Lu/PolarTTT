@@ -4,6 +4,7 @@ package Players;
 import java.util.ArrayList;
 import java.util.Random;
 import Logic.PolarTTT;
+import java.util.Arrays;
 
 
 public class NeuralNetwork {
@@ -26,14 +27,27 @@ public class NeuralNetwork {
                     case 'X':                           //If board[i][j] == X , insert 1
                         initialInput[initCounter] = 1;
                         break;
-                    case 'O':                            
+                    case 'O':                           //If board[i][j] == O, insert -1 
                         initialInput[initCounter] = -1;
                         break;
                 }
             }
         }
     }
+    
     /**
+     * Create neurons,connection edges to initialize neural net
+     */
+    public void initializeNetwork(){
+        //initialize the first layer
+        for(int i = 0; i < initialInput.length; i++){
+            addNeuron(new Neuron());
+        }
+    }
+    
+    
+    /**
+     * Adds neuron to the network
      * 
      * @param n The neuron to be added to the network 
      */
@@ -57,7 +71,7 @@ public class NeuralNetwork {
     }
     
     public void feedForward(){
-        
+        //Feed through the network
     }
     
     public void backProp(){
