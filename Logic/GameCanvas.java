@@ -288,7 +288,7 @@ public class GameCanvas extends Canvas {
 			g.drawString(l.toString(), p1 ? xloc1 : xloc2, 10 * i + 46);
 			
 			int f = game.getNthFitness(i);
-			if (f == PolarTTT.WIN_WEIGHT) {
+			if (f >= PolarTTT.WIN_WEIGHT) {
 				g.setColor(FOREGROUND_COLOR);
 				g.drawString(" Win!", xloc3 + (p1 ? 0 : 30), 10 * i + 46);
 			}

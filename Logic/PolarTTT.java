@@ -493,6 +493,8 @@ public class PolarTTT extends KeyAdapter{
 					board[locations[1].r][locations[1].t]+
 					board[locations[2].r][locations[2].t]+
 					board[locations[3].r][locations[3].t]+"";
+			if (str=="XXXX") fitness+=WIN_WEIGHT;
+			if (str=="OOOO") fitness-=WIN_WEIGHT;
 			for(int a = 0; a<4; a++)
 			{
 				if(str.charAt(a) == PLAYER1) p1Counter++;
@@ -531,6 +533,8 @@ public class PolarTTT extends KeyAdapter{
 					board[ring][2]+
 					board[ring][3]+
 					board[ring][4]+""; 
+			if(str.contains("XXXX")) fitness += WIN_WEIGHT;
+			if(str.contains("OOOO")) fitness -= WIN_WEIGHT;
 			if(str.contains(".XXX.")) fitness+=100;
 			if(str.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
 			if(str2.contains(".XXX.")) fitness+=100;
@@ -777,9 +781,10 @@ public class PolarTTT extends KeyAdapter{
 			
 			//	Request focus
 			public void focusLost(FocusEvent e){
-				//e.getComponent().requestFocus();
+				e.getComponent().requestFocus();
 			}
 		});
+		
 		
 		//	Allow the keyboard input to be run
 		frame.addKeyListener(this);
@@ -901,7 +906,7 @@ public class PolarTTT extends KeyAdapter{
 	/**
 	 * Determines updates the available_locations and available_locations_l arrays to match the game state
 	 */
-	private void findAvailableMoves(){
+	public void findAvailableMoves(){
 		
 		//	Track how many are available
 		int count = 0;
@@ -1011,4 +1016,5 @@ public class PolarTTT extends KeyAdapter{
 		ANN_FITNESS = 1,
 		CLASSIFIER_FITNESS = 2;
 	public int fitness_mode = DYLAN_FITNESS;
+	
 }
