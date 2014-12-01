@@ -26,7 +26,8 @@ public class NeuralNetwork {
      */
     void connect(Neuron from, Neuron to){
         Random randFloat = new Random();                       //Generates random number
-        Edge newEdge = new Edge(from,to,randFloat.nextFloat());//Connect two neurons with a random weight
+        Edge newEdge = new Edge(from,to,randFloat.nextFloat());//Create a new edge from Neuron 'from' to Neuron 'to'
+        from.addEdge(newEdge);                                 //Connect edge from Neuron 'from' to neuron 'to'                                  
     }
     
     public void feedForward(){
