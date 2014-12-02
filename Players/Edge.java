@@ -9,9 +9,7 @@ package Players;
  * @author NinjaKL
  */
 public class Edge {
-    Neuron from;
-    Neuron to;
-    
+    Neuron from,to;
     float weight;
     
     public Edge(Neuron inFrom,Neuron inTo,float inWeight){

@@ -11,6 +11,15 @@ import Players.*;
  */
 public class PolarTTT extends KeyAdapter{
 	
+	//	We're doing this
+	private int classifyFitness(char[][] board) {
+		return 0;
+	}
+	
+	//	Kalvyn should do this
+	private int neuralFitness(char[][]board) {
+		return 0;
+	}
 	
 	/**
 	 * Starts the game from scratch
@@ -80,8 +89,8 @@ public class PolarTTT extends KeyAdapter{
 				
 				num_games++;
 
-				players[0].endGame(board, history);
-				players[1].endGame(board, history);
+				players[0].endGame(board, history, fitnesses);
+				players[1].endGame(board, history, fitnesses);
 				
 				
 				if (isVisible) {
@@ -156,7 +165,7 @@ public class PolarTTT extends KeyAdapter{
 			history[turn] = location;
 			
 			//	Evaluate the players' fitnesses;
-			fitness = dylanFitness(board);
+			fitness = getFitness(board);
 			fitnesses[turn] = fitness;
 			
 			//	Rotate turn count and thus give other player a turn
@@ -256,47 +265,90 @@ public class PolarTTT extends KeyAdapter{
 			
 			//	This overwrites players so make sure the mode is right
 			if (canvas.getMode() == GameCanvas.MODE_MENU){
-										
-				//	Assign each player from the provided menu selections
-				for (int i = 0; i < 2; i++) {
-					switch (canvas.menu_indices[i]){
+				
+				switch (canvas.menu_indices[1]){
 
 					//	The human player is the first option
 					case 0:
-						players[i] = new HumanPlayer();
+						players[1] = new HumanPlayer();
 						break;
 					
 					//	The random player is the second option
 					case 1:
-						players[i] = new RandomPlayer();
+						players[1] = new RandomPlayer();
 						break;
 
 					//	The greedy player is the third option
 					case 2:
-						players[i] = new GreedyPlayer();
+						players[1] = new GreedyPlayer();
 						break;
 						
 					case 3:
-						players[i] = new MinimaxPlayer();
+						players[1] = new MinimaxPlayer();
+						fitness_mode = DYLAN_FITNESS;
 						break;
 						
 					case 4:
-						players[i] = new ClassifierPlayer();
+						players[1] = new MinimaxPlayer();
+						fitness_mode = CLASSIFIER_FITNESS;
 						break;
 						
 					case 5:
-						players[i] = new ANNPlayer();
+						players[1] = new MinimaxPlayer();
+						fitness_mode = ANN_FITNESS;
 						break;
 					
 					//	This should only happen during test stage
 					default:
-						System.out.println(canvas.menu_indices[i]);
+						System.out.println(canvas.menu_indices[1]);
 						System.exit(0);
-					}
 				}
 				
-				if (canvas.menu_indices[2] == 1) {
-					if (canvas.menu_indices[0] == 0 || canvas.menu_indices[1] == 0) {
+				if (players[1] instanceof MinimaxPlayer) {
+					((MinimaxPlayer)players[1]).num_plies = canvas.menu_indices[2];
+					((MinimaxPlayer)players[1]).use_pruning = canvas.menu_indices[3] == 0;
+				}
+				
+				if (canvas.menu_indices[0] == 0) {
+					players[0] = new HumanPlayer();
+				}
+				//	Copy-pasted code for assigning the first player to match the second
+				else switch (canvas.menu_indices[1]){
+
+					case 0:
+						players[0] = new HumanPlayer();
+						break;
+					
+					case 1:
+						players[0] = new RandomPlayer();
+						break;
+	
+					case 2:
+						players[0] = new GreedyPlayer();
+						break;
+						
+					case 3:
+						players[0] = new MinimaxPlayer();
+						break;
+						
+					case 4:
+						players[0] = new MinimaxPlayer();
+						break;
+						
+					case 5:
+						players[0] = new MinimaxPlayer();
+						break;
+					
+					//	This should only happen during test stage
+					default:
+						System.out.println(canvas.menu_indices[0]);
+						System.exit(0);
+				}
+
+				
+				
+				if (canvas.menu_indices[0] == 1) {
+					if (canvas.menu_indices[1] == 0) {
 						throw new RuntimeException("Humans can't play in bulk!");
 					}
 					
@@ -378,7 +430,20 @@ public class PolarTTT extends KeyAdapter{
 	public int fitness(char player) {
 		return fitness;
 	}
-	public int dylanFitness(char[][] board) {
+	public int getFitness(char[][] board) {
+		switch (fitness_mode) {
+		case DYLAN_FITNESS:
+			return dylanFitness(board);
+		case CLASSIFIER_FITNESS:
+			return classifyFitness(board);
+		case ANN_FITNESS:
+			return neuralFitness(board);
+		default:
+			return 0;
+		}
+	}
+	
+	private int dylanFitness(char[][] board) {
 		//	Todd's edit:
 		//	Not the most efficient check but allows for AI to account for winning states
 		for (int r = 0; r < 4; r++) {
@@ -428,6 +493,8 @@ public class PolarTTT extends KeyAdapter{
 					board[locations[1].r][locations[1].t]+
 					board[locations[2].r][locations[2].t]+
 					board[locations[3].r][locations[3].t]+"";
+			if (str=="XXXX") fitness+=WIN_WEIGHT;
+			if (str=="OOOO") fitness-=WIN_WEIGHT;
 			for(int a = 0; a<4; a++)
 			{
 				if(str.charAt(a) == PLAYER1) p1Counter++;
@@ -466,6 +533,8 @@ public class PolarTTT extends KeyAdapter{
 					board[ring][2]+
 					board[ring][3]+
 					board[ring][4]+""; 
+			if(str.contains("XXXX")) fitness += WIN_WEIGHT;
+			if(str.contains("OOOO")) fitness -= WIN_WEIGHT;
 			if(str.contains(".XXX.")) fitness+=100;
 			if(str.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
 			if(str2.contains(".XXX.")) fitness+=100;
@@ -490,7 +559,7 @@ public class PolarTTT extends KeyAdapter{
 		}
 		return fitness;
 	}
-	public Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
+	private Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
 	{
 		Location[] locations = new Location[4];
 		for(int a = 0; a<4; a++)
@@ -712,9 +781,10 @@ public class PolarTTT extends KeyAdapter{
 			
 			//	Request focus
 			public void focusLost(FocusEvent e){
-				//e.getComponent().requestFocus();
+				e.getComponent().requestFocus();
 			}
 		});
+		
 		
 		//	Allow the keyboard input to be run
 		frame.addKeyListener(this);
@@ -836,7 +906,7 @@ public class PolarTTT extends KeyAdapter{
 	/**
 	 * Determines updates the available_locations and available_locations_l arrays to match the game state
 	 */
-	private void findAvailableMoves(){
+	public void findAvailableMoves(){
 		
 		//	Track how many are available
 		int count = 0;
@@ -941,4 +1011,10 @@ public class PolarTTT extends KeyAdapter{
 	private int fitnesses[];
 	private int turn, fitness, num_games = 0, num_ties = 0;
 	private boolean gameon, isVisible = true;
+	public static final int
+		DYLAN_FITNESS = 0,
+		ANN_FITNESS = 1,
+		CLASSIFIER_FITNESS = 2;
+	public int fitness_mode = DYLAN_FITNESS;
+	
 }

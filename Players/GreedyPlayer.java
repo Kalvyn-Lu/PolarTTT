@@ -16,7 +16,14 @@ public class GreedyPlayer extends Player {
 		
 		for (int i = 0; i < options.length; i++) {
 			char[][] theory = game.theoreticalMove(options[i], is_maximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
-			int theory_fitness = game.dylanFitness(theory);
+			int theory_fitness = game.getFitness(theory);
+			
+			//	Winning move- make it!
+			if (theory_fitness == PolarTTT.WIN_WEIGHT) {
+				bestPlays[0] = options[i];
+				num_best = 0;
+				break;
+			}
 			if (!is_maximizer) {
 				theory_fitness *= -1;
 			}

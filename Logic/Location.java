@@ -21,7 +21,7 @@ public class Location {
 	 */
 	public Location[] adjacentLocations(){
 		//	Make a new arraylist
-		Location[] locations = new Location[((r == 0 || r == 3) ? 5 : 8)];
+		Location[] locations = new Location[(r == 0 || r == 3) ? 5 : 8];
 		int count = 0;
 		
 		//	Add locations that are in the grid
