@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 
 public class NeuralNetwork {
-    ArrayList neurons;          //List of neurons in the neural network
+    ArrayList<Neuron>neurons;          //List of neurons in the neural network
     
     float[] initialInput;        //Input Layer
     
@@ -24,10 +24,10 @@ public class NeuralNetwork {
                     case PolarTTT.EMPTY:                //If board[i][j] == EMPTY, insert 0 into intialInput
                         initialInput[initCounter] = 0;
                         break;
-                    case 'X':                           //If board[i][j] == X , insert 1
+                    case PolarTTT.PLAYER1:                           //If board[i][j] == X , insert 1
                         initialInput[initCounter] = 1;
                         break;
-                    case 'O':                           //If board[i][j] == O, insert -1 
+                    case PolarTTT.PLAYER2:                           //If board[i][j] == O, insert -1 
                         initialInput[initCounter] = -1;
                         break;
                 }
@@ -40,8 +40,14 @@ public class NeuralNetwork {
      */
     public void initializeNetwork(){
         //initialize the first layer
-        for(int i = 0; i < initialInput.length; i++){
+        for(int i = 0; i < initialInput.length/2; i++){
             addNeuron(new Neuron());
+        }
+        Neuron output = new Neuron();
+        //Connections
+        for(int i = 0; i < neurons.size(); i++){
+            if(neurons.get(i)!=null) connect(neurons.get(i),output);     
+            else break;
         }
     }
     
