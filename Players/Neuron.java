@@ -22,7 +22,6 @@ public class Neuron {
     
     public void addEdge(Edge toAdd){
         edges.add(toAdd);
-        System.out.println(edges.size());
     }
     /**
      * Output of the node
@@ -31,15 +30,14 @@ public class Neuron {
      * sets lastOutput to output
      * 
      * @param input input of the node
-     * @return the output of the node : dot product of input and edge weights 
+     * @return the output of the node : sum of input put through activation function 
      */
     
     public float output(float[] input){
         float output = 0;
-        System.out.println(input.length + " " + edges.size());
-        for(int i = 0; i < input.length; i++){          //Loop to find the dot
-                output = input[i] * edges.get(i).weight;
-            
+        //sum up all input
+        for(int i = 0; i < input.length; i++){
+            output += input[i];
         }
         output = activationFuntion(output);
         lastInput = input;
