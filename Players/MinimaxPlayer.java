@@ -151,11 +151,9 @@ public class MinimaxPlayer extends Player {
 			}
 		}
 		
-		if (count == 0) {
-			available_locations_l = null;
-		}
-		else {
-			available_locations_l = new Location[count];
+	
+		available_locations_l = new Location[count];
+		if (0 < count) {
 			for (int r = 0; r < 4; r++){
 				for (int t = 0; t < 12; t++){
 					if (available_locations[r][t]){
