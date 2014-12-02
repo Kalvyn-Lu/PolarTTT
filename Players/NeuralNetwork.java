@@ -12,43 +12,17 @@ public class NeuralNetwork {
     
     float[] initialInput;        //Input Layer
     
-    public NeuralNetwork(char[][] board){
-        int initCounter = 0;                            //Counter to fill initalInput
-        neurons = new ArrayList<>();                    //Initialize neurons ArrayList
-        initialInput = new float[board.length * board.length];  //Initialize initialInput
-        
-        for(int i = 0; i < board.length;i++){           //Loop to fill initialInput
-            for(int j = 0; j < board.length; j++){
-                initCounter++;                          //Increment counter
-                switch(board[i][j]){                    //Switch statement to fill initalInput corresponding to the board
-                    case PolarTTT.EMPTY:                //If board[i][j] == EMPTY, insert 0 into intialInput
-                        initialInput[initCounter] = 0;
-                        break;
-                    case PolarTTT.PLAYER1:                           //If board[i][j] == X , insert 1
-                        initialInput[initCounter] = 1;
-                        break;
-                    case PolarTTT.PLAYER2:                           //If board[i][j] == O, insert -1 
-                        initialInput[initCounter] = -1;
-                        break;
-                }
-            }
-        }
+    int[] layers;
+    
+    public NeuralNetwork(int[] inLayers){
+       layers = inLayers;
     }
     
     /**
      * Create neurons,connection edges to initialize neural net
      */
     public void initializeNetwork(){
-        //initialize the first layer
-        for(int i = 0; i < initialInput.length/2; i++){
-            addNeuron(new Neuron());
-        }
-        Neuron output = new Neuron();
-        //Connections
-        for(int i = 0; i < neurons.size(); i++){
-            if(neurons.get(i)!=null) connect(neurons.get(i),output);     
-            else break;
-        }
+        
     }
     
     
