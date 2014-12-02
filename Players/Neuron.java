@@ -5,13 +5,13 @@ import java.util.ArrayList;
 
 public class Neuron {
       
-    Edge[] edges;  //Connections to nodes
+    ArrayList<Edge> edges;  //Connections to nodes
     
     float[] lastInput;     //Last input for Error check
     float lastOutput;       //Last Output for Error check
     
     public Neuron(){
-        
+        edges = new ArrayList<>();
     }
     
     /**
@@ -21,12 +21,8 @@ public class Neuron {
      */
     
     public void addEdge(Edge toAdd){
-        for(int i = 0; i < edges.length;i++){
-            if(edges[i]==null){
-                edges[i] = toAdd;
-                break;
-            }
-        }
+        edges.add(toAdd);
+        System.out.println(edges.size());
     }
     /**
      * Output of the node
@@ -40,10 +36,10 @@ public class Neuron {
     
     public float output(float[] input){
         float output = 0;
+        System.out.println(input.length + " " + edges.size());
         for(int i = 0; i < input.length; i++){          //Loop to find the dot
-            for(int j = 0; j < edges.length; j++){      //product of input*weight
-                output = input[i] * edges[j].weight;
-            }
+                output = input[i] * edges.get(i).weight;
+            
         }
         output = activationFuntion(output);
         lastInput = input;
