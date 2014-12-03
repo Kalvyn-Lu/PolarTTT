@@ -37,7 +37,9 @@ public class Neuron {
         float output = 0;
         //sum up all input
         for(int i = 0; i < input.length; i++){
-            output += input[i];
+            //weight the inputs
+           // System.out.println(input.length + " " + edges.size());
+            output += input[i] * edges.get(i).weight;
         }
         output = activationFuntion(output);
         lastInput = input;

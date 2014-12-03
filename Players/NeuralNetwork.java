@@ -1,4 +1,3 @@
-
 package Players;
 
 import java.util.ArrayList;
@@ -6,20 +5,21 @@ import java.util.Random;
 import Logic.PolarTTT;
 import java.util.Arrays;
 
-
 public class NeuralNetwork {
+
     Neuron[][] net;
     int[] layers;
-    
+
     /**
-     * 
-     * @param inLayers to initialize the Network. #indices = #of layers, elements = #nodes
+     *
+     * @param inLayers to initialize the Network. #indices = #of layers,
+     * elements = #nodes
      */
-    public NeuralNetwork(int[] inLayers){
-       layers = inLayers;
-       initializeNetwork();
+    public NeuralNetwork(int[] inLayers) {
+        layers = inLayers;
+        initializeNetwork();
     }
-    
+
     /**
      * Create neurons,connection edges to initialize neural net
      */
@@ -39,77 +39,94 @@ public class NeuralNetwork {
 //        }
 //        
 //    }
-    public void initializeNetwork(){
+    public void initializeNetwork() {
         net = new Neuron[layers.length][];
         //loop to Create Layers (1st dim is layer)
-        for(int i = 0; i < layers.length; i++){
+        for (int i = 0; i < layers.length; i++) {
             net[i] = new Neuron[layers[i]];
             //loop to Create Nodes within layers(2nd dim is neurons)
-            for(int j = 0; j < layers[i]; j++){
+            for (int j = 0; j < layers[i]; j++) {
                 net[i][j] = new Neuron();
                 //After creating a node after the first layer, connect all nodes
                 //from previous layer to newly created node.
-                if(i > 0){
-                    for(int k = 0; k < layers[i-1];k++){ 
-                        connect(net[i-1][k],net[i][j]);
+                if (i > 0) {
+                    for (int k = 0; k < layers[i - 1]; k++) {
+                        connect(net[i - 1][k], net[i][j]);
                     }
                 }
             }
         }
     }
-    
-    void printArray(Neuron[][] n){
-        for(int i = 0; i< n.length;i++){
-            for(int j = 0; j < n[i].length;j++){
+
+    /**
+     *
+     * @param from The neuron for the connection to be made from
+     * @param to The neuron for the connection to be made to
+     */
+    void connect(Neuron from, Neuron to) {                      //Generates random number
+        float randomFloat = (float) (Math.random() - .5);
+        Edge newEdge = new Edge(from, to, randomFloat);//Create a new edge from Neuron 'from' to Neuron 'to'
+        to.addEdge(newEdge);                                 //Connect edge from Neuron 'from' to neuron 'to'      
+    }
+
+    /**
+     * Output the heuristic given the float array
+     *
+     * @param input
+     * @return
+     */
+    public float[] output(float[] input) {
+        float[] tempInput = input;
+        //for each layer in the neural net
+        for (int i = 1; i < net.length; i++) {
+            float[] output = new float[net[i].length];
+            //fill the output array with the outputs of the layer
+            for (int j = 0; j < output.length; j++) {
+                //output[i] = output of respective node
+                System.out.println(j);
+                output[j] = net[i][j].output(tempInput);
+            }
+            tempInput = copyArray(output);
+        }
+        return tempInput;
+    }
+
+    /**
+     *
+     * @param toCopy
+     * @return copy of array
+     */
+    public float[] copyArray(float[] toCopy) {
+        float[] copy = new float[toCopy.length];
+        for (int i = 0; i < toCopy.length; i++) {
+            float iCopy = toCopy[i];
+            copy[i] = iCopy;
+        }
+        return copy;
+    }
+
+    public void backProp() {
+
+    }
+
+    void printArray(Neuron[][] n) {
+        for (int i = 0; i < n.length; i++) {
+            for (int j = 0; j < n[i].length; j++) {
                 System.out.print("[" + n[i][j].edges.size() + "]");
             }
             System.out.println();
         }
     }
-    
-    /**
-     * 
-     * @param from The neuron for the connection to be made from
-     * @param to   The neuron for the connection to be made to
-     */
-    void connect(Neuron from, Neuron to){                      //Generates random number
-        float randomFloat = (float) (Math.random() - .5);
-        Edge newEdge = new Edge(from,to,randomFloat);//Create a new edge from Neuron 'from' to Neuron 'to'
-        from.addEdge(newEdge);                                 //Connect edge from Neuron 'from' to neuron 'to'      
-    }
-    
-    /**
-     * Output the heuristic given the float array
-     * @param input
-     * @return 
-     */
-    public float[] output(float[] input){
-        float[] tempInput = input;
-        //for each layer in the neural net
-        for(int i = 0; i < net.length; i++){
-            //Output array for each layer
-            float[] output = new float[net[i].length];
-            //put input through output function of neurons, set to output,
-            //Output still needs to be weighted
-            for(int j = 0; j < output.length; j++){                
-                output[i] = net[i][j].output(tempInput);
-            }
-            //make output the new input for the next layer
-            System.arraycopy(output, 0, tempInput, 0, output.length);
-        }
-        return tempInput;
-    }
-    
-    public void backProp(){
-        
-    }
-    
-    public static void main (String[] args){
-        int[] layerd = new int[] {2,10,1};
-        float[] input = new float[]{1,1,1,1};
+
+    public static void main(String[] args) {
+        int[] layerd = new int[]{2, 10, 10, 1};
+        float[] input = new float[]{1, 1};
         NeuralNetwork net = new NeuralNetwork(layerd);
         net.printArray(net.net);
-        net.output(input);            
+        float[] boop = net.output(input);
+        for (int i = 0; i < boop.length; i++) {
+            System.out.println(boop[i]);
+        }
     }
-        
-    }
+
+}
