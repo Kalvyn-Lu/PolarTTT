@@ -105,10 +105,25 @@ public class NeuralNetwork {
         return copy;
     }
 
-    public void backProp() {
-
+    public void backPropogation() {
+        float learningRate = 1;
+        
+        //for all layers in the network, adjust the weights
+        for(Neuron[] layers: net){
+            //For each neuron in the layer, adjust the weight
+            for(int i = 0; i < layers.length; i++){
+                //Iteration through weights from edges
+                for(int j = 0; j < layers[i].edges.size();j++){
+                    //Adjust the weight
+                    //layers[i].edges.get(i).weight += weightAdjustFunction
+                }
+            }
+        }
     }
     
+    public void train(){
+        
+    }
     
     /**
      * Print array for testing.Neuron -> [#of edges]
