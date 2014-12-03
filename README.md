@@ -1,46 +1,67 @@
 PolarTTT
 ========
 
-CSCI 446 Articial Intelligence  Final Project
+Todd Beckman, Dylan Hills, Kalvyn Lu
 
-Group Members
-Todd Beckman
-Kalvyn Lu
-(Dylan Hills)
+CSCI 446 Articial Intelligence Semester Project
 
-==============================================
+Features:
+========
+Logic package:
 
-Notes to group members:
-Todd says:
-Predicate logic for our winning condition just got much easier since I just recently learned that there are only 4 rings, not 5, so now it shouldn't be nearly as difficult to test the winning conditions using predicate logic. 
+Main.java: This runner instantiates a PolarTTT object and then runs it.
+There is also an included feature to allow reading .CSV files into float matrices and vice versa,
+a feature for the learning and testing data on the learning algorithms.
 
-If the * is where the most recent move was, then there are two cases to be checked- inner and outer rings (r=0,3 or r=1,2). Ring-based win check can be the same regardless of the ring.
+PolarTTT.java: An object instantiated from this class is the centralized game manager. It tracks
+the status of the game while sending information to the graphical user interface for users to
+view game progress. Players are queried for their moves one at a time in this game. A human player
+may attempt an invalid move to no effect, while all computer players attempting invalid moves will
+be immediately disqualified. When the game ends (in a win, loss, or tie), the user can then choose
+to restart the game for another match.
 
-==============================================
+GameCanvas.java: An object instantiaged from this class renders the game state. Initially, this
+canvas is a menu for the user to pick settings such as which heuristic functions the computer players
+are to user and whether to run a single game or in bulk. Humans cannot play in bulk. A single game is
+rendered turn by turn, but bulk games will display only a few important statistics.
 
-Files:
-Main.java
-This runner instantiates a PolarTTT object and then runs it.
+Note: There is a known issue in Java in which losing window focus may not fire the focusLost event.
+In order to prevent the graphical user interface from becoming completely locked, focus is requested
+immediately. For Window users, this causes the window to flash. This behavior is normal.
 
-PolarTTT.java
-An object instantiated from this class has multiple purposes. It:
+Location.java: This class abstracts grid locations into a tuple that pairs two values. In addition to 
+this semantic abstraction, it bypasses Java's multiple return limitation. Also helpful of this class
+is the method that fetches the list of five or eight adjacent locations on the grid.
+========
+Players package:
 
-1) Manages a GUI with which to interact with the user. It sends the GUI the status of the game and receives mouse input. It is what tracks the keyboard input instead of the GUI. 
+Player.java: This abstract class provides base functionality of players for PolarTTT.java to interact
+with. Important methods are getName(), which allows the player to decide at runtime which identifier
+is to be used in the graphical user interface, and getChoice(), which provides for the player which
+locations on the board are legal moves and returns to the game the choice of move.
 
-2) Handles the game logic. The rules of the game are enforced here. The players can request information about the state of the game, and ultimately are asked to decide where to go each turn. Invalid moves result in a disqualification.
+RandomPlayer.java: A player instantiated from this class will pick random moves from the list of
+available moves every turn.
 
-3) Restarting or closing the game. Closing can be done at any time by pressing Escape, while pressing Enter when a game is over will restart the game loop to the initial menu.
+GreedyPlayer.java: A player instantiated from this class will use the game's choice of heuristic
+function to maximize the fitness of the next move only.
 
-Note:
-There is a known issue in Java regarding how input listeners stop working sometimes when focus is lost and regained. This has been fixed with a compromise: on Windows computers, the window flashes on the taskbar.
+MinimaxPlayer.java: A player instantiated from this class will use the game's choice of heuristic
+function to maximize the fitness of the next N/2 moves by searching N plies into a tree of options
+and applying the Minimax algorithm to select the best plan. Alpha-beta pruning is applied only if
+the user has chosen to use it.
+========
+RBFClassifier package:
 
-Also note:
-There is a known issue where it may take multiple mouse clicks to play on a location as the Human Player. Just keep trying and it will accept it within 1-3 tries.
+RBFNetwork.java: An object instantiated from this class is a neural network with one input layer, one
+hidden layer, and one output layer. The weights from the input layer into the hidden layer are
+generated externally and given to the network. The neural network learns by updating the weights from
+the hidden (Gaussian) layer into the output layer based on the the error. This makes it a supervised
+learning agent.
 
-Location.java
-This class abstracts grid locations into a tuple that pairs two values rather than keeping them entirely separate. It also provides a method and the potential for more that help simplify the semantics behind what a location represents.
-
-GameCanvas.java
-This class denotes objects that are the GUI. It draws both the menues and the game states as well as delivering useful and essential information to the user. It contains a mouse listener that will feed into the game the grid location closest to the location of the mouse click. Players can also preview which moves are currently available as well.
-
-Player.java
+RBFClassifier.java: An object instantiated from this class is a classifier that manages the RBFNetwork
+and determines the best-fit class for given input according to the neural network simply by maximizing
+the output of the neural network. It also generates the hidden layer's weights as averages among the
+learning data. These averages are calculated with the k-means algorithm which is guaranteed to find
+local optima for the weights in a finite (and typically small) number of steps, unlike many methods of
+approximation which require convergence.
