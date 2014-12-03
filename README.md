@@ -5,9 +5,16 @@ Todd Beckman, Dylan Hills, Kalvyn Lu
 
 CSCI 446 Articial Intelligence Semester Project
 
-Features:
+In progress:
+========
+-Setting up game to store game data for learning agents (Todd)
+-Finalizing RBF Classifier for this game's use (Todd)
+-Setting up TD ANN (Kalvyn)
+
+Files:
 ========
 Logic package:
+========
 
 Main.java: This runner instantiates a PolarTTT object and then runs it.
 There is also an included feature to allow reading .CSV files into float matrices and vice versa,
@@ -32,8 +39,9 @@ immediately. For Window users, this causes the window to flash. This behavior is
 Location.java: This class abstracts grid locations into a tuple that pairs two values. In addition to 
 this semantic abstraction, it bypasses Java's multiple return limitation. Also helpful of this class
 is the method that fetches the list of five or eight adjacent locations on the grid.
-========
+
 Players package:
+========
 
 Player.java: This abstract class provides base functionality of players for PolarTTT.java to interact
 with. Important methods are getName(), which allows the player to decide at runtime which identifier
@@ -50,8 +58,9 @@ MinimaxPlayer.java: A player instantiated from this class will use the game's ch
 function to maximize the fitness of the next N/2 moves by searching N plies into a tree of options
 and applying the Minimax algorithm to select the best plan. Alpha-beta pruning is applied only if
 the user has chosen to use it.
-========
+
 RBFClassifier package:
+========
 
 RBFNetwork.java: An object instantiated from this class is a neural network with one input layer, one
 hidden layer, and one output layer. The weights from the input layer into the hidden layer are
