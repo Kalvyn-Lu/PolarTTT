@@ -83,7 +83,6 @@ public class NeuralNetwork {
             //fill the output array with the outputs of the layer
             for (int j = 0; j < output.length; j++) {
                 //output[i] = output of respective node
-                System.out.println(j);
                 output[j] = net[i][j].output(tempInput);
             }
             tempInput = copyArray(output);
@@ -108,7 +107,10 @@ public class NeuralNetwork {
     public void backProp() {
 
     }
-
+    /**
+     * Print array for testing.Neuron -> [#of edges]
+     * @param n 
+     */
     void printArray(Neuron[][] n) {
         for (int i = 0; i < n.length; i++) {
             for (int j = 0; j < n[i].length; j++) {
