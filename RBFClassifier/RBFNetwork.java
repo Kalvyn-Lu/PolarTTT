@@ -111,7 +111,7 @@ class OutputNode {
 		weights = new float[num_inputs];
 		for (int i = 0; i < num_inputs; i++) {
 			
-			//	Keep the weights between -5 and 5.
+			//	Keep the weights between -.5 and .5
 			weights[i] = (float)(Math.random() - .5);
 		}
 	}

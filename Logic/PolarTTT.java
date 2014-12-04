@@ -235,7 +235,7 @@ public class PolarTTT extends KeyAdapter{
 	private boolean Is(char x, char y) {
 		return x == y;
 	}
-		
+	
 	@Override
 	public void keyPressed(KeyEvent e) {
 		switch (e.getKeyCode()){

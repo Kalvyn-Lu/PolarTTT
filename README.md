@@ -7,9 +7,11 @@ CSCI 446 Articial Intelligence Semester Project
 
 In progress:
 ========
--Setting up game to store game data for learning agents (Todd)
--Finalizing RBF Classifier for this game's use (Todd)
--Setting up TD ANN (Kalvyn)
+->Setting up game to store game data for learning agents (Todd)
+
+->Finalizing RBF Classifier for this game's use (Todd)
+
+->Setting up TD ANN (Kalvyn)
 
 Files:
 ========
