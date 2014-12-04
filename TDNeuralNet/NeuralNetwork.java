@@ -18,22 +18,6 @@ public class NeuralNetwork {
     /**
      * Create neurons,connection edges to initialize neural net
      */
-//    public void initializeNetwork(){
-//        shrek = new Neuron[layers.length-1][];
-//        for(int i = 0; i < shrek.length; i++){
-//            shrek[i] = new Neuron[layers[i + 1]];
-//            for(int j = 0; j < layers[i+1]; j++){
-//                shrek[i][j] = new Neuron();
-//                if(i > 0){
-//                    for(int k = 0; k < layers[i-1]; k++){
-//                        System.out.println("Added");
-//                        connect(shrek[i][j],shrek[i-1][k]);
-//                    }
-//                }
-//            }
-//        }
-//        
-//    }
     public void initializeNetwork() {
         net = new Neuron[layers.length][];
         //loop to Create Layers (1st dim is layer)
