@@ -214,7 +214,15 @@ public class GameCanvas extends Canvas {
 				g.drawString(menu[x][i], 25 + 75 * i, menuitemy * (1 + x));
 			}
 			else {
-				g.drawString("" + menu_indices[x], 25, menuitemy * (1 + x));
+				int plies = menu_indices[x];
+				String text = plies + "";
+				if (plies == 1) {
+					text += " (Greedy)";
+				}
+				else {
+					text += " (Minimax)";
+				}
+				g.drawString(text, 25, menuitemy * (1 + x));
 			}
 		}
 	}
