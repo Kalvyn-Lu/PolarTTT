@@ -446,7 +446,7 @@ public class PolarTTT extends KeyAdapter{
 	private int dylanFitness(char[][] board) {
 		//	Todd's edit:
 		//	Not the most efficient check but allows for AI to account for winning states
-		for (int r = 0; r < 4; r++) {
+		/*for (int r = 0; r < 4; r++) {
 			for (int t = 0; t < 12; t++) {
 				if (win(board, PLAYER1, r, t)) {
 					return WIN_WEIGHT;
@@ -455,15 +455,11 @@ public class PolarTTT extends KeyAdapter{
 					return -WIN_WEIGHT;
 				}
 			}
-		}
+		}*/
 		
 		String str, str2;
 		int fitness = 0;
-		int ring = 0;
-		int spoke = 0;
-		int diagonal = 0;
-		int p1Counter = 0;
-		int p2Counter = 0;
+		int ring,spoke,diagonal,p1Counter,p2Counter;
 		
 		for(spoke = 0; spoke<12; spoke++)//iterating through the spokes
 		{
@@ -471,6 +467,8 @@ public class PolarTTT extends KeyAdapter{
 			p2Counter = 0;
 
 			str = ""+board[0][spoke]+board[1][spoke]+board[2][spoke]+board[3][spoke]+"";
+                        if(str.equals("XXXX")){return WIN_WEIGHT;}
+                        if(str.equals("OOOO")){return -WIN_WEIGHT;}
 			for(int a = 0; a<4; a++)
 			{
 				if(str.charAt(a) == PLAYER1) p1Counter++;
@@ -493,8 +491,8 @@ public class PolarTTT extends KeyAdapter{
 					board[locations[1].r][locations[1].t]+
 					board[locations[2].r][locations[2].t]+
 					board[locations[3].r][locations[3].t]+"";
-			if (str=="XXXX") fitness+=WIN_WEIGHT;
-			if (str=="OOOO") fitness-=WIN_WEIGHT;
+                        if(str.equals("XXXX")){return WIN_WEIGHT;}
+                        if(str.equals("OOOO")){return -WIN_WEIGHT;}
 			for(int a = 0; a<4; a++)
 			{
 				if(str.charAt(a) == PLAYER1) p1Counter++;
@@ -533,13 +531,13 @@ public class PolarTTT extends KeyAdapter{
 					board[ring][2]+
 					board[ring][3]+
 					board[ring][4]+""; 
-			if(str.contains("XXXX")) fitness += WIN_WEIGHT;
-			if(str.contains("OOOO")) fitness -= WIN_WEIGHT;
-			if(str.contains(".XXX.")) fitness+=100;
-			if(str.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
-			if(str2.contains(".XXX.")) fitness+=100;
-			if(str2.contains(".OOO.")) fitness-=100;//these 2 lines account for wins that are impossible to block, it does not work for if the 5 goes over the 11-0 border
-			//this is the only way i could think to account for it, but im not sure how to make it apply to the rest
+			if(     str.contains("XXXX")||
+                                str.contains(".XXX.")||
+                                str2.contains(".XXX.")) return WIN_WEIGHT;
+			if(     str.contains("OOOO")||
+                                str.contains(".OOO.")||
+                                str2.contains(".OOO.")) return -WIN_WEIGHT;
+			//this accounts for wins and wins that are impossible to block, str1 does not work if the string goes over the 11-0 border which is why str2 is needed
 			for(int b = 0; b<12; b++)
 			{
 				p1Counter = 0;
