@@ -1,10 +1,5 @@
 package TDNeuralNet;
 
-import java.util.ArrayList;
-import java.util.Random;
-import Logic.PolarTTT;
-import java.util.Arrays;
-
 public class NeuralNetwork {
 
     Neuron[][] net;
