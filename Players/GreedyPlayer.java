@@ -4,11 +4,18 @@ import Logic.Location;
 import Logic.PolarTTT;
 
 public class GreedyPlayer extends Player {
+	
+	public GreedyPlayer(int fitness_mode) {
+		super(fitness_mode);
+	}
 
 	@Override
 	public Location getChoice(Location[] options) {
 		if (options.length == 48) {
 			return options[(int)(Math.random() * 48)];
+		}
+		else if (options.length == 0) {
+			throw new RuntimeException("No options provided!");
 		}
 		
 		Location[] bestPlays = new Location[options.length];
@@ -16,7 +23,7 @@ public class GreedyPlayer extends Player {
 		
 		for (int i = 0; i < options.length; i++) {
 			char[][] theory = game.theoreticalMove(options[i], is_maximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
-			int theory_fitness = game.getFitness(theory);
+			int theory_fitness = game.getFitness(theory, fitness_mode, is_maximizer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
 			
 			//	Winning move- make it!
 			if (theory_fitness == PolarTTT.WIN_WEIGHT) {
@@ -43,7 +50,22 @@ public class GreedyPlayer extends Player {
 
 	@Override
 	public String getName() {
-		return "Greedy Player";
+		String name = "";
+		switch (fitness_mode) {
+		case PolarTTT.DYLAN_FITNESS:
+			name = "Dylan's ";
+			break;
+		case PolarTTT.ALEX_FITNESS:
+			name = "Alex's ";
+			break;
+		case PolarTTT.CLASSIFIER_FITNESS:
+			name = "Classifer ";
+			break;
+		case PolarTTT.ANN_FITNESS:
+			name = "RoxANNe ";
+			break;
+		}
+		return name + " Greedy";
 	}
 
 }

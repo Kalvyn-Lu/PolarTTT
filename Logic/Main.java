@@ -13,6 +13,15 @@ public class Main {
 		new PolarTTT().begin();
 	}
 	
+	/**
+	 * Mainly for Debugging. Prints out both a meaningful label and the value of any variable
+	 * @param anchor A hopefully meaningful label
+	 * @param var A hopefully non-null variable
+	 */
+	public static void sout(String anchor, Object var){
+		System.out.println(anchor + ": " + (var == null ? "null" : var));
+	}
+	
 	public static float[][] csv_to_float(String filename) {
 		BufferedReader file = null;
 		String raw = "";

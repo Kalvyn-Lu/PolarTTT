@@ -2,6 +2,8 @@ package Logic;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import Players.*;
 
@@ -131,6 +133,7 @@ public class PolarTTT extends KeyAdapter{
 			if (choice == null || !choose(choice)){
 				gameon = false;
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) made an illegal move and lost the game!\n");
+				Main.sout("Illegal Choice", choice);
 				players[(turn + 1) & 1].incScore();
 				return;
 			}
@@ -165,7 +168,7 @@ public class PolarTTT extends KeyAdapter{
 			history[turn] = location;
 			
 			//	Evaluate the players' fitnesses;
-			fitness = getFitness(board);
+			fitness = getFitness(board, players[turn & 1].getFitnessMode(), (0 == (turn & 1) ? PLAYER1 : PLAYER2 ));
 			fitnesses[turn] = fitness;
 			
 			//	Rotate turn count and thus give other player a turn
@@ -265,90 +268,70 @@ public class PolarTTT extends KeyAdapter{
 			
 			//	This overwrites players so make sure the mode is right
 			if (canvas.getMode() == GameCanvas.MODE_MENU){
-				
-				switch (canvas.menu_indices[1]){
-
-					//	The human player is the first option
-					case 0:
-						players[1] = new HumanPlayer();
-						break;
-					
-					//	The random player is the second option
-					case 1:
-						players[1] = new RandomPlayer();
-						break;
-
-					//	The greedy player is the third option
-					case 2:
-						players[1] = new GreedyPlayer();
-						break;
-						
-					case 3:
-						players[1] = new MinimaxPlayer();
-						fitness_mode = DYLAN_FITNESS;
-						break;
-						
-					case 4:
-						players[1] = new MinimaxPlayer();
-						fitness_mode = CLASSIFIER_FITNESS;
-						break;
-						
-					case 5:
-						players[1] = new MinimaxPlayer();
-						fitness_mode = ANN_FITNESS;
-						break;
-					
-					//	This should only happen during test stage
-					default:
-						System.out.println(canvas.menu_indices[1]);
-						System.exit(0);
-				}
-				
-				if (players[1] instanceof MinimaxPlayer) {
-					((MinimaxPlayer)players[1]).num_plies = canvas.menu_indices[2];
-					((MinimaxPlayer)players[1]).use_pruning = canvas.menu_indices[3] == 0;
-				}
-				
-				if (canvas.menu_indices[0] == 0) {
-					players[0] = new HumanPlayer();
-				}
-				//	Copy-pasted code for assigning the first player to match the second
-				else switch (canvas.menu_indices[1]){
-
-					case 0:
-						players[0] = new HumanPlayer();
-						break;
-					
-					case 1:
-						players[0] = new RandomPlayer();
-						break;
+				for (int i = 0; i < 2; i++) {
+					switch (canvas.menu_indices[i + 1]){
 	
-					case 2:
-						players[0] = new GreedyPlayer();
-						break;
+						case GameCanvas.HUMAN:
+							players[i] = new HumanPlayer(NONE);
+							break;
 						
-					case 3:
-						players[0] = new MinimaxPlayer();
-						break;
+						case GameCanvas.RANDOM:
+							players[i] = new RandomPlayer(NONE);
+							break;
+	
+						case GameCanvas.ALEX:
+							players[i] = new MinimaxPlayer(ALEX_FITNESS);
+							break;
+							
+						case GameCanvas.DYLAN:
+							players[i] = new MinimaxPlayer(DYLAN_FITNESS);
+							break;
+							
+						case GameCanvas.CLASSIFIER:
+							players[i] = new MinimaxPlayer(CLASSIFIER_FITNESS);
+							break;
+							
+						case GameCanvas.ANN:
+							players[i] = new MinimaxPlayer(ANN_FITNESS);
+							break;
 						
-					case 4:
-						players[0] = new MinimaxPlayer();
-						break;
-						
-					case 5:
-						players[0] = new MinimaxPlayer();
-						break;
-					
-					//	This should only happen during test stage
-					default:
-						System.out.println(canvas.menu_indices[0]);
-						System.exit(0);
+						//	This should only happen during test stage
+						default:
+							System.out.println(canvas.menu_indices[1]);
+							System.exit(0);
+					}
 				}
-
 				
+				//	Minimax players require more setup
+				if (players[0] instanceof MinimaxPlayer) {
+					
+					int plies = canvas.menu_indices[GameCanvas.P1NUMPLIES];
+					
+					//	Greedy player plays with one ply
+					if (plies == 1) {
+						players[0] = new GreedyPlayer(players[0].getFitnessMode());
+					}
+					else {
+						((MinimaxPlayer)players[0]).num_plies = plies;
+						((MinimaxPlayer)players[0]).use_pruning = canvas.menu_indices[GameCanvas.P1PRUNE] == 0;
+					}
+				}
+				if (players[1] instanceof MinimaxPlayer) {
+					int plies = canvas.menu_indices[GameCanvas.P2NUMPLIES];
+					
+					//	Greedy player plays with one ply
+					if (plies == 1) {
+						players[1] = new GreedyPlayer(players[1].getFitnessMode());
+					}
+					else {
+						((MinimaxPlayer)players[1]).num_plies = plies;
+						((MinimaxPlayer)players[1]).use_pruning = canvas.menu_indices[GameCanvas.P2PRUNE] == 0;
+					}
+				}
 				
-				if (canvas.menu_indices[0] == 1) {
-					if (canvas.menu_indices[1] == 0) {
+				if (canvas.menu_indices[GameCanvas.NUM_GAMES] == 1) {
+					if (players[0] instanceof HumanPlayer || players[1] instanceof HumanPlayer) {
+						//	TODO probably don't have it kill the program when this happens
 						throw new RuntimeException("Humans can't play in bulk!");
 					}
 					
@@ -362,6 +345,7 @@ public class PolarTTT extends KeyAdapter{
 				}
 			}
 			
+			//	 what the fuck
 			else if (!gameon) {
 
 				synchronized(frame){
@@ -430,19 +414,98 @@ public class PolarTTT extends KeyAdapter{
 	public int fitness(char player) {
 		return fitness;
 	}
-	public int getFitness(char[][] board) {
+	public int getFitness(char[][] board, int fitness_mode, char player) {
+		int f = 0;
 		switch (fitness_mode) {
 		case DYLAN_FITNESS:
-			return dylanFitness(board);
+			f= dylanFitness(board);
+			break;
+		case ALEX_FITNESS:
+			f=alexFitness(board);
+			break;
 		case CLASSIFIER_FITNESS:
-			return classifyFitness(board);
+			f=classifyFitness(board);
+			break;
 		case ANN_FITNESS:
-			return neuralFitness(board);
+			f=neuralFitness(board);
+			break;
+		case NONE:
+			return 0;
 		default:
+			System.out.println("Using undefined fitness mode!");
+			System.exit(0);
 			return 0;
 		}
+		return (player == PLAYER2 ? -f : f);
 	}
 	
+	private int alexFitness(char[][] state) {
+		return heuristic(state, new ArrayList<Location>(Arrays.asList(history)), true);
+	}
+     
+	public int heuristic(char[][] state, ArrayList<Location> locs, boolean forX) {
+        int[] sX = longest_unblocked_chain_of(state, PLAYER1); //value of board for X
+        int[] sY = longest_unblocked_chain_of(state, PLAYER2); //value of board for Y
+        int max_x = sX[0]; //longest chain for PLAYER1
+        int max_y = sY[0]; //longest chain for PLAYER2
+        if (max_x >= 4 && max_y >= 4) {
+        	
+            return 0; //if both players have winning states, tie
+        }
+        if (max_x >= 4) {
+            return ((forX) ? 1 : -1) * Integer.MAX_VALUE;
+        }
+        if (max_y >= 4) {
+            return ((!forX) ? 1 : -1) * Integer.MAX_VALUE;
+        } else {
+            return ((forX) ? 1 : -1) * (sX[1] - sY[1]); //otherwise use secondary score
+        }
+    }
+
+ 
+    public int chain_length(char[][] state, int x, int y, int dx, int dy) {
+        char start = state[x][y];
+        int count = 0;
+        int init_x = x;
+        int init_y = y;
+        do {
+            x += dx;
+            y += dy;
+            x = posMod(x, state.length);
+            y = posMod(y, state[0].length);
+            count++;
+        } while (state[x][y] == start && !(x == init_x && y == init_y));
+        return count;
+    }
+ 
+    public int[] longest_unblocked_chain_of(char[][] state, char type) {
+        int max = 0;
+        int score = 0;
+        for (int i = 0; i < state.length; i++) {
+            for (int j = 0; j < state[i].length; j++) {
+                if (state[i][j] == type) {
+                    for (int k = -1; k <= 1; k++) {
+                        for (int l = -1; l <= 1; l++) {
+                            if (i != 0 || j != 0) {
+                                int cLength = chain_length(state, i, j, k, l);
+                                int fin_x = posMod((i + cLength * k), state.length);
+                                int fin_y = posMod((j + cLength * l), state[0].length);
+                                if (state[fin_x][fin_y] == EMPTY) {
+                                    max = Math.max(max, cLength);
+                                    score += cLength;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return new int[]{max, score};
+    }
+ 
+    public int posMod(int a, int b) {
+        return (a % b + b) % b;
+    }	
 	private int dylanFitness(char[][] board) {
 		//	Todd's edit:
 		//	Not the most efficient check but allows for AI to account for winning states
@@ -1010,9 +1073,9 @@ public class PolarTTT extends KeyAdapter{
 	private int turn, fitness, num_games = 0, num_ties = 0;
 	private boolean gameon, isVisible = true;
 	public static final int
-		DYLAN_FITNESS = 0,
+		NONE = 0,
+		DYLAN_FITNESS = 3,
+		ALEX_FITNESS = 4,
 		ANN_FITNESS = 1,
 		CLASSIFIER_FITNESS = 2;
-	public int fitness_mode = DYLAN_FITNESS;
-	
 }

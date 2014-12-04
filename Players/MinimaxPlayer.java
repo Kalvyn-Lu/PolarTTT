@@ -4,17 +4,26 @@ import Logic.*;
 
 public class MinimaxPlayer extends Player {
 	
+
+	public MinimaxPlayer(int fitness_mode) {
+		super(fitness_mode);
+	}
+	
 	@Override
 	public Location getChoice(Location[] options) {
+		Main.sout("Options", options.length);
 		return makeMove(game.theoreticalMove(options[0], '.'));
 	}
 	
 	@Override
 	public String getName() {
 		String name = "Minimax ";
-		switch (game.fitness_mode) {
+		switch (fitness_mode) {
 		case PolarTTT.DYLAN_FITNESS:
 			name = "Dylan's ";
+			break;
+		case PolarTTT.ALEX_FITNESS:
+			name = "Alex's ";
 			break;
 		case PolarTTT.CLASSIFIER_FITNESS:
 			name = "Classifer ";
@@ -35,7 +44,7 @@ public class MinimaxPlayer extends Player {
 	public int minimax(char[][]state, int depth, boolean is_maxer) {
 		Location[] childs;
 		if (depth == 0 || (childs = findAvailableMoves(state)).length == 0) {
-			return game.getFitness(state);
+			return game.getFitness(state, fitness_mode, is_maxer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
 		}
 		int bestVal = 0;
 		if (is_maxer) {
@@ -43,7 +52,6 @@ public class MinimaxPlayer extends Player {
 			for (Location child : childs) {
 				// do it
 				domove(state, child, is_maxer);
-				
 				
 				int val = minimax(state, depth - 1, !is_maxer);
 				
@@ -77,16 +85,15 @@ public class MinimaxPlayer extends Player {
 		
 	public Location makeMove(char[][]state) {
 		Location[] childs = findAvailableMoves(state);
-		System.out.println(childs.length);
 		if (childs.length == 0) {
 			return null;
 		}
-		Location bestChild = childs[0];
+		int bestChild = 0;
 		
 		//	do it
-		domove(state, childs[0], is_maximizer);
+		domove(state, childs[0], true);
 		
-		int bestVal = minimax(state, num_plies, is_maximizer);
+		int bestVal = minimax(state, num_plies, true);
 		
 		// undo it
 		undomove(state, childs[0]);
@@ -94,20 +101,21 @@ public class MinimaxPlayer extends Player {
 		for (int i = 1; i < childs.length; i++) {
 			
 			//	do it
-			domove(state, childs[i], is_maximizer);
+			domove(state, childs[i], true);
 			
-			int childval = minimax(state, num_plies, is_maximizer);
+			int childval = minimax(state, num_plies, true);
 			
 			// undo it
 			undomove(state, childs[i]);
 			
 			if (childval > bestVal) {
-				bestChild = childs[i];
+				Main.sout("New max", bestVal);
+				bestChild = i;
 				bestVal = childval;
 			}
 		}
 		
-		return bestChild;
+		return childs[bestChild];
 	}
 	
 	public void domove(char[][] state, Location l, boolean is_maxer) {

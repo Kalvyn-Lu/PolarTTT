@@ -28,7 +28,8 @@ public class GameCanvas extends Canvas {
 		for (int i = 0; i < menu_indices.length; i++) {
 			menu_indices[i] = 0;
 		}
-		menu_indices[2] = 1;
+		menu_indices[P1NUMPLIES] = 1;
+		menu_indices[P2NUMPLIES] = 1;
 		
 		//	Set up the center of the circle
 		origin_x = (int)RADIUS_UNIT * 5;
@@ -126,8 +127,8 @@ public class GameCanvas extends Canvas {
 	 * Handles right arrow
 	 */
 	public void moveright() {
-		if (menu_selected == 2) {
-			menu_indices[2]++;
+		if (menu_selected == P1NUMPLIES || menu_selected == P2NUMPLIES) {
+			menu_indices[menu_selected]++;
 			repaint();
 		}
 		else {
@@ -143,9 +144,9 @@ public class GameCanvas extends Canvas {
 	 * Handles the left arrow
 	 */
 	public void moveleft(){
-		if (menu_selected == 2) {
-			if (0 < menu_indices[2]) {
-				menu_indices[2]--;
+		if (menu_selected == P1NUMPLIES || menu_selected == P2NUMPLIES) {
+			if (1 < menu_indices[menu_selected]) {
+				menu_indices[menu_selected]--;
 				repaint();
 			}
 		}
@@ -177,6 +178,8 @@ public class GameCanvas extends Canvas {
 		}
 	}
 	
+	private int menuitemy = 65;
+	
 	/**
 	 * Paints the menu
 	 * @param g The Graphics
@@ -185,33 +188,33 @@ public class GameCanvas extends Canvas {
 		//	Draw the highlights first
 		g.setColor(Color.BLUE);
 		for (int i = 0; i < menu_indices.length; i++) {
-			if (i == 2) {
-				g.fillRect(20, 284, 75, 24);
+			if (i == P1NUMPLIES || i == P2NUMPLIES) {
+				g.fillRect(20, menuitemy * (i + 1) - 16, 75, 24);
 			}
 			else {
-				g.fillRect(20 + 75 * menu_indices[i], 100 * (i + 1) - 16, 75, 24);
+				g.fillRect(20 + 75 * menu_indices[i], menuitemy * (i + 1) - 16, 75, 24);
 			}
 		}
 		
 		//	Draw the current highlight
 		g.setColor(Color.GREEN);
-		if (menu_selected == 2) {
-			g.fillRect(20, 284, 75, 24);
+		if (menu_selected == P1NUMPLIES || menu_selected == P2NUMPLIES) {
+			g.fillRect(20, menuitemy * (menu_selected + 1) - 16, 75, 24);
 		}
 		else {
-			g.fillRect(20 + 75 * menu_indices[menu_selected], 100 * (menu_selected + 1) - 16, 75, 24);
+			g.fillRect(20 + 75 * menu_indices[menu_selected], menuitemy * (menu_selected + 1) - 16, 75, 24);
 		}
 		
 		//	Draw the options
 		g.setColor(Color.WHITE);
 		
 		for (int x = 0; x < menu.length; x++) {
-			g.drawString(menu_titles[x], 50, 75 + 100 * x);
-			if (x != 2) for (int i = 0; i < menu[x].length; i++) {
-				g.drawString(menu[x][i], 25 + 75 * i, 100 + 100 * x);
+			g.drawString(menu_titles[x], 50, (int) (menuitemy * (.75 + x)));
+			if (x != P1NUMPLIES&& x != P2NUMPLIES) for (int i = 0; i < menu[x].length; i++) {
+				g.drawString(menu[x][i], 25 + 75 * i, menuitemy * (1 + x));
 			}
 			else {
-				g.drawString("" + menu_indices[x], 25, 300);
+				g.drawString("" + menu_indices[x], 25, menuitemy * (1 + x));
 			}
 		}
 	}
@@ -461,24 +464,46 @@ public class GameCanvas extends Canvas {
 	//	The game this gui interfaces with
 	private PolarTTT game;
 	
+	public static final int
+		NUM_GAMES = 0,
+		P1TYPE = 1,
+		P2TYPE = 2,
+		P1NUMPLIES = 3,
+		P1PRUNE = 4,
+		P2NUMPLIES = 5,
+		P2PRUNE = 6,
+		REORDER = 7;
+	
 	//	Menu
 	private String[] menu_titles = 
 		{
+			"Number of Games:",
 			"Player 1 Type:",
 			"Player 2 Type:",
-			"Number of Plies",
-			"Prune?",
+			"P1 Number of Plies",
+			"P1 Prune?",
+			"P2 Number of Plies",
+			"P2 Prune?",
 			"Keep Player Order?"
 		};
 	private String[][] menu = 
 		{
-			{"Human", "Bulk Training"},
-			{"Human", "Random", "Greedy", "Dylan", "Classifier", "ANN"},
-			{"0"},
+			{"One Game", "Bulk Training"},
+			{"Human", "Random", "Alex", "Dylan", "Classifier", "ANN"},
+			{"Human", "Random", "Alex", "Dylan", "Classifier", "ANN"},
+			{"1"},
+			{"Yes Yes Yes!", "No No No!"},
+			{"1"},
 			{"Yes Yes Yes!", "No No No!"},
 			{"Yes Yes Yes!", "No No No!"}
 		};
-	
+	public static final int
+		HUMAN = 0,
+		RANDOM = 1,
+		ALEX = 2,
+		DYLAN = 3,
+		CLASSIFIER = 4,
+		ANN = 5;
 	//	Modes determine which game is to be played
 	private int mode;
 	public static final int MODE_MENU = 0;
