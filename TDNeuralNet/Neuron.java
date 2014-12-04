@@ -1,4 +1,4 @@
-package Players;
+package TDNeuralNet;
 
 import Logic.*;
 import java.util.ArrayList;

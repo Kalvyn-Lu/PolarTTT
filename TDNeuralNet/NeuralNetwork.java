@@ -1,4 +1,4 @@
-package Players;
+package TDNeuralNet;
 
 import java.util.ArrayList;
 import java.util.Random;
