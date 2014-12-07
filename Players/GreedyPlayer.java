@@ -25,12 +25,6 @@ public class GreedyPlayer extends Player {
 			char[][] theory = game.theoreticalMove(options[i], is_maximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
 			int theory_fitness = game.getFitness(theory, fitness_mode, is_maximizer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
 			
-			//	Winning move- make it!
-			if (theory_fitness == PolarTTT.WIN_WEIGHT) {
-				bestPlays[0] = options[i];
-				num_best = 0;
-				break;
-			}
 			if (!is_maximizer) {
 				theory_fitness *= -1;
 			}

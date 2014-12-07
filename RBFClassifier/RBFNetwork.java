@@ -1,5 +1,7 @@
 package RBFClassifier;
 
+import java.util.Arrays;
+
 public class RBFNetwork {
 	protected GaussianNode[] gnodes;
 	protected OutputNode[] onodes;
@@ -87,11 +89,17 @@ class GaussianNode {
 	public GaussianNode() { }
 	
 	public float output(float[] raw) {
-		
-		//	Gaussify the distance between input layer and the gauss centers
-		return gaussian_function(
-			RBFClassifier.euclidean_distance(raw, centers)
-		);
+		try {
+			//	Gaussify the distance between input layer and the gauss centers
+			return gaussian_function(
+				RBFClassifier.euclidean_distance(raw, centers)
+			);
+		}
+		catch (ArrayIndexOutOfBoundsException e) {
+			System.out.println("Error reading data:");
+			System.out.println(Arrays.toString(raw));
+			return 0;
+		}
 	}
 	
 	public void set_centers(float[] centers) {

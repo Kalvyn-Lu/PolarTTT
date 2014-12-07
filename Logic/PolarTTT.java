@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import Players.*;
+import RBFClassifier.RBFClassifier;
 
 /**
  * @author Anthony
@@ -13,10 +14,6 @@ import Players.*;
  */
 public class PolarTTT extends KeyAdapter{
 	
-	//	We're doing this
-	private int classifyFitness(char[][] board) {
-		return 0;
-	}
 	
 	//	Kalvyn should do this
 	private int neuralFitness(char[][]board) {
@@ -57,7 +54,7 @@ public class PolarTTT extends KeyAdapter{
 					players[0] = players[1];
 					players[1] = temp;
 					
-					if (num_games % 1000 == 0){
+					if (num_games % 25 == 0){
 						canvas.setInvisible(players[0], players[1]);
 						canvas.repaint();
 					}
@@ -116,7 +113,7 @@ public class PolarTTT extends KeyAdapter{
 		while (turn < 48) {
 			
 			//	Reset available moves
-			findAvailableMoves();
+			assignAvailableMoves();
 			
 			//	This shouldn't happen.
 			if (available_locations_l == null){
@@ -130,19 +127,29 @@ public class PolarTTT extends KeyAdapter{
 		
 			//	Get the player's move
 			choice = p.getChoice(available_locations_l);
+			
+			
 			if (choice == null || !choose(choice)){
 				gameon = false;
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) made an illegal move and lost the game!\n");
 				Main.sout("Illegal Choice", choice);
 				players[(turn + 1) & 1].incScore();
+				save_data(getPlayerSymbol(players[(turn + 1) & 1]));
 				return;
 			}
+			
+			if (turn % 5 == 3) {
+				save_board(board);
+			}
+			
 			//if (checkWin(choice)) {
 			if (win(board, getPlayerSymbol(p), choice.r, choice.t)){
 				gameon = false;
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
 				fitnesses[turn - 1] = WIN_WEIGHT;
 				players[(turn + 1) & 1].incScore();
+				save_board(board);
+				save_data(getPlayerSymbol(players[(turn + 1) & 1]));
 				return;
 			}
 		}
@@ -150,6 +157,7 @@ public class PolarTTT extends KeyAdapter{
 		//	Cat's game!
 		gameon = false;
 		canvas.setStatus(GameCanvas.STATUS_TIE, turn, players[1].getName() + " ( " + PLAYER2 + " ) made the last move and tied the game!\n");
+		save_data(EMPTY);
 		num_ties++;
 	}
 	
@@ -168,7 +176,7 @@ public class PolarTTT extends KeyAdapter{
 			history[turn] = location;
 			
 			//	Evaluate the players' fitnesses;
-			fitness = getFitness(board, players[turn & 1].getFitnessMode(), (0 == (turn & 1) ? PLAYER1 : PLAYER2 ));
+			fitness = getFitness(board, DYLAN_FITNESS, (0 == (turn & 1) ? PLAYER1 : PLAYER2 ));
 			fitnesses[turn] = fitness;
 			
 			//	Rotate turn count and thus give other player a turn
@@ -421,7 +429,7 @@ public class PolarTTT extends KeyAdapter{
 			f= dylanFitness(board);
 			break;
 		case ALEX_FITNESS:
-			f=alexFitness(board);
+			f=alexFitness(board, player);
 			break;
 		case CLASSIFIER_FITNESS:
 			f=classifyFitness(board);
@@ -436,76 +444,105 @@ public class PolarTTT extends KeyAdapter{
 			System.exit(0);
 			return 0;
 		}
-		return (player == PLAYER2 ? -f : f);
+		return f;
 	}
 	
-	private int alexFitness(char[][] state) {
-		return heuristic(state, new ArrayList<Location>(Arrays.asList(history)), true);
+	private int alexFitness(char[][] state, char player) {
+		return heuristic(state, player);
 	}
-     
-	public int heuristic(char[][] state, ArrayList<Location> locs, boolean forX) {
-        int[] sX = longest_unblocked_chain_of(state, PLAYER1); //value of board for X
-        int[] sY = longest_unblocked_chain_of(state, PLAYER2); //value of board for Y
-        int max_x = sX[0]; //longest chain for PLAYER1
-        int max_y = sY[0]; //longest chain for PLAYER2
-        if (max_x >= 4 && max_y >= 4) {
-        	
-            return 0; //if both players have winning states, tie
+	
+	public int expand(char[][] state, char playingPlayer, int x, int y, int d) {
+        int mx = state.length;
+        int my = state[0].length;
+        if (state[x][y] != EMPTY) {
+            return 0;
         }
-        if (max_x >= 4) {
-            return ((forX) ? 1 : -1) * Integer.MAX_VALUE;
+        //0 is up-down, 1 is sw-ne, 2 is left-right, 3 is nw-se
+        int dx, dy;
+        switch (d) {
+            case 0:
+                dx = 0;
+                dy = 1;
+                break;
+            case 1:
+                dx = -1;
+                dy = 1;
+                break;
+            case 2:
+                dx = 1;
+                dy = 0;
+                break;
+            default:
+                dx = 1;
+                dy = 1;
         }
-        if (max_y >= 4) {
-            return ((!forX) ? 1 : -1) * Integer.MAX_VALUE;
+        int hfp1 = 0;
+        int tx = posMod(x + dx, mx);
+        int ty = posMod(y + dy, my);
+        char type1 = state[tx][ty];
+        boolean hb1 = false;
+        if (type1 != EMPTY) {
+            hfp1++;
+            while (state[tx][ty] == type1 && !(tx == x && ty == y)) {
+                tx = posMod(tx + dx, mx);
+                ty = posMod(ty + dy, my);
+                hfp1++;
+            }
+            if (state[tx][ty] != EMPTY) hb1 = true;
+        }
+        int hfp2 = 0;
+        tx = posMod(x - dx, mx);
+        ty = posMod(y - dy, my);
+        char type2 = state[tx][ty];
+        boolean hb2 = false;
+        if (type2 != EMPTY) {
+            hfp2++;
+            while (state[tx][ty] == type1 && !(tx == x && ty == y)) {
+                tx = posMod(tx - dx, mx);
+                ty = posMod(ty - dy, my);
+                hfp2++;
+            }
+            if (state[tx][ty] != EMPTY) hb2 = true;
+        }
+        if (type1==type2) {
+            if (hfp1+hfp2 >= 4) return ((type1==playingPlayer)?1:-1) * Integer.MAX_VALUE;
+            else if (hb2 && hb1) return 0; //same type, but can't hit total length 4. Return 0, bad spot.
+            else return hfp1+hfp2; //else return sum
         } else {
-            return ((forX) ? 1 : -1) * (sX[1] - sY[1]); //otherwise use secondary score
+            if (hfp1 >= 4 && type1 == playingPlayer) return ((type1==playingPlayer)?1:-1) * Integer.MAX_VALUE;
+            if (hfp2 >= 4 && type2 == playingPlayer) return ((type2==playingPlayer)?1:-1) * Integer.MAX_VALUE;
+             
+            if (hfp1 > hfp2) {
+                return ((type1==playingPlayer)?1:-1) * hfp1;
+            } else {
+                return ((type2==playingPlayer)?1:-1) * hfp2;
+            }
         }
     }
-
- 
-    public int chain_length(char[][] state, int x, int y, int dx, int dy) {
-        char start = state[x][y];
+     
+    public int heuristic(char[][] state, char playingPlayer) {
         int count = 0;
-        int init_x = x;
-        int init_y = y;
-        do {
-            x += dx;
-            y += dy;
-            x = posMod(x, state.length);
-            y = posMod(y, state[0].length);
-            count++;
-        } while (state[x][y] == start && !(x == init_x && y == init_y));
-        return count;
-    }
- 
-    public int[] longest_unblocked_chain_of(char[][] state, char type) {
-        int max = 0;
-        int score = 0;
         for (int i = 0; i < state.length; i++) {
-            for (int j = 0; j < state[i].length; j++) {
-                if (state[i][j] == type) {
-                    for (int k = -1; k <= 1; k++) {
-                        for (int l = -1; l <= 1; l++) {
-                            if (i != 0 || j != 0) {
-                                int cLength = chain_length(state, i, j, k, l);
-                                int fin_x = posMod((i + cLength * k), state.length);
-                                int fin_y = posMod((j + cLength * l), state[0].length);
-                                if (state[fin_x][fin_y] == EMPTY) {
-                                    max = Math.max(max, cLength);
-                                    score += cLength;
-                                }
-                            }
-                        }
+            for (int j = 0; j < state[0].length; j++) {
+                for (int k = 0; k < 4; k++) {
+                    int tcount = expand(state, playingPlayer, i, j, k);
+                    if (Math.abs(tcount) == Math.abs(count)) { //prefer offensive
+                        count = (tcount>count)?tcount:count;
+                    } else if (Math.abs(tcount) > Math.abs(count)) {
+                        count = tcount;
                     }
                 }
             }
         }
-        return new int[]{max, score};
+        return count;
     }
  
-    public int posMod(int a, int b) {
+    public static int posMod(int a, int b) {
         return (a % b + b) % b;
-    }	
+    }
+    
+	
+	
 	private int dylanFitness(char[][] board) {
 		//	Todd's edit:
 		//	Not the most efficient check but allows for AI to account for winning states
@@ -783,30 +820,351 @@ public class PolarTTT extends KeyAdapter{
 	 */
 	public static final int WIN_WEIGHT = 1000000;
 	
-	/**
-	 * How much we care about a spokes win in our fitness function
-	 */
-	public static final int SPOKE_WIN_WEIGHT = 7;
+	//////////////////////////////
+	//		PRIVATE HELPERS		//
+	//////////////////////////////
+	
+
+	//	We're doing this
+	private int classifyFitness(char[][] board) {
+		float[] input = new float[48];
+		int i = 0;
+		for (int r = 0; r < board.length; r++) {
+			for (int t = 0; t < board[0].length; t++) {
+				switch(board[r][t]) {
+				case PLAYER1:
+					input[i++] = 1;
+					break;
+				case PLAYER2:
+					input[i++] = -1;
+					break;
+				case EMPTY:
+					input[i++] = 0;
+					break;
+				}
+			}
+		}
+		
+		int output = classifier.classify(input);
+		
+		switch (output) {
+		case 0:
+			return 1;
+		case 1:
+			return -1;
+		case 2:
+			return 0;
+		}
+		
+		return 0;
+	}
 	
 	/**
-	 * How much we care about a spiral win in our fitness function
+	 * Determines from any board if a location is adjacent to a desired space
+	 * @param board The board to check
+	 * @param r The ring
+	 * @param t The spoke
+	 * @return Whether there is any adjacent taken location
 	 */
-	public static final int SPIRAL_WIN_WEIGHT = 7;
+	private boolean hasAdjacent(char[][] board, int r, int t){
+		
+		//	Get all neighbors
+		Location[] neighbors = new Location(r, t).adjacentLocations();
+		 
+		//	Check all neighbors
+		for (Location location : neighbors){
+			if (peek(location) != EMPTY){
+				return true;
+			}
+		}
+		
+		//	None adjacent
+		return false;
+	}
+	
+
+	/**
+	 * Determines if a location is adjacent to a desired space.
+	 * @param r The ring
+	 * @param t The spoke
+	 * @return Whether there is any adjacent taken location
+	 */
+	private boolean hasAdjacent(int r, int t) {
+		return hasAdjacent(board, r, t);
+	}
+	
+	//////////////////////////////
+	//		PUBLIC HELPERS		//
+	//////////////////////////////
+	
+
+	/**
+	 * Gets the turn count of the current play.
+	 * @return The current turn
+	 */
+	public int getTurn() {
+		return turn;
+	}
 	
 	/**
-	 * How much we care about a rub win in our fitness function
+	 * Signals to the current player that a mouse input has been enterred and the Location of that click
+	 * @param radius The loop from the center closest to the mouse on click
+	 * @param theta The spoke on the loop closest to the mouse location on click
 	 */
-	public static final int RING_WIN_WEIGHT = 7;
+	public void receiveMouseInput(int radius, int theta) {
+		this.players[turn & 1].receiveMouseInput(radius, theta);
+	}
 	
 	/**
-	 * Rings can have openings that are potentially longer than 4 in a row. If such exist, how much do we care about the extras?
+	 * Get the move made at the nth point in history
+	 * @param n The move number
+	 * @return The location of that move or null if it hasn't been played yet
 	 */
-	public static final int RING_WIN_BEYOND_4 = 2;
+	public Location getNthMoveMade(int n){
+		//	Make sure the move exists
+		if (-1 < n && n < turn){ 
+			return history[n];
+		}
+		
+		//	Null indicates no move
+		return null;
+	}
 	
 	/**
-	 * How much we care about potential wins where we already have positions owned
+	 * Get the fitness of the board at the given state
+	 * @param n The move number
+	 * @return The fitness during that turn
 	 */
-	public static final int ALREADY_OWNED_WEIGHT = 5;
+	public int getNthFitness(int n) {
+		//	Only allowed to get the fitness of a turn that there was a move made
+		if (-1 < n && n < turn) {
+			return fitnesses[n];
+		}
+		return 0;
+	}
+	
+	/**
+	 * Peaks at the marking at a location
+	 * @param location
+	 * @return The marking
+	 */
+	public char peek(Location location) {
+		return board[location.r][location.t];
+	}
+	
+	/**
+	 * Peaks at the marking at a location
+	 * @param radius The ring to check
+	 * @param theta The spoke to check
+	 * @return The marking
+	 */
+	public char peek(int radius, int theta) {
+		return board[radius][theta];
+	}
+	
+	/**
+	 * Query the player for its name
+	 * @param player The player number to check
+	 * @return The name of that player
+	 */
+	public String getPlayerName(char player) {
+		try {
+			return players[getPlayerIndex(player)].getName();
+		}
+		catch (ArrayIndexOutOfBoundsException e){
+			//	It's not worth killing the game
+			return "Unknown Player";
+		}
+	}
+	
+	/**
+	 * Gets the index in the players array of a player
+	 * @param player The player to check
+	 * @return The index of that player in the players array
+	 */
+	public int getPlayerIndex(char player) {
+		return player == PLAYER1 ? 0 : player == PLAYER2 ? 1 : -1;
+	}
+	/**
+	 * Get the symbol associated with the Player
+	 * @param player The Player object to test with
+	 * @return The player's symbol or PolarTTT.EMPTY if the player isn't in the game
+	 */
+	public char getPlayerSymbol(Player player) {
+		return players[0] == player ? PLAYER1 : players[1] == player ? PLAYER2 : EMPTY;
+	}
+	
+	/**
+	 * Determines if a move is available to play
+	 * @param location The location to test
+	 * @return Whether to allow that play
+	 */
+	public boolean moveIsAvailable(Location location) {
+		return available_locations[location.r][location.t];
+	}
+	
+	/**
+	 * Save the state of the board into a list for output later
+	 * @param board The board
+	 */
+	private void save_board(char[][] board) {
+		int[] list = new int[49];
+		int i = 0;
+		for (int r = 0; r < board.length; r++) {
+			for (int t = 0; t < board[0].length; t++) {
+				switch(board[r][t]) {
+				case PLAYER1:
+					list[i++] = 1;
+					break;
+				case PLAYER2:
+					list[i++] = -1;
+					break;
+				case EMPTY:
+					list[i++] = 0;
+					break;
+				}
+			}
+		}
+		data.add(list);
+	}
+	
+	/**
+	 * Saves the results of all of the turns this game into a file
+	 * @param winner Which player won or EMPTY
+	 */
+	private void save_data(char winner) {
+		//	Default to a tie
+		int res = 2;
+		
+		switch (winner) {
+		case PLAYER1:
+			res = 0;
+			break;
+		case PLAYER2:
+			res = 1;
+		}
+		
+		for (int[] list : data) {
+			list[48] = res;
+		}
+		
+		int[][] complete = new int[data.size()][49];
+		data.toArray(complete);
+		Main.int_to_csv("data/test.csv", complete, true);
+		
+		//	Clear the list!
+		data.clear();
+	}
+	
+	/**
+	 * Updates the available_locations and available_locations_l arrays to match the game state
+	 */
+	private void assignAvailableMoves(){
+		
+		//	Track how many are available
+		int count = 0;
+		
+		//	Check every spot
+		for (int i = 0; i < 4; i++){
+			for (int j = 0; j < 12; j++){
+
+				//	Anywhere is legal on first turn
+				if (turn == 0) {
+					available_locations[i][j] = true;
+				}
+				
+				//	If the spot is taken then it's not available
+				else if (board[i][j] != '.'){
+					available_locations[i][j] = false;
+				}
+				
+				
+				//	Spot is available if it has an adjacent taken
+				else {
+					available_locations[i][j] = hasAdjacent(i, j);
+				}
+				
+				//	Keep count
+				if (available_locations[i][j]) {
+					count++;
+				}
+			}
+		}
+		
+		if (count == 0) {
+			//	This will throw an error- which we want to see rather than just having 0 possible moves.
+			available_locations_l = null;
+		}
+		else {
+			//	Copy the locations into a list of Locations from the double-array
+			available_locations_l = new Location[count];
+			for (int r = 0; r < 4; r++){
+				for (int t = 0; t < 12; t++){
+					if (available_locations[r][t]){
+						available_locations_l[--count] = new Location(r, t);
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Gets all available locations in the current board state
+	 * @return An array of all locations that are legal moves
+	 */
+	public Location[] allAvailableLocations(){
+		
+		//	It's fine to do this because the boolean array is used for logic;
+		//	if the player tampers with this array, it won't affect the game.
+		return available_locations_l;
+	}
+	
+	/**
+	 * Checks how many games were played this session
+	 * @return the number of games
+	 */	
+	public int gameCount() {
+		return num_games;
+	}
+	
+	/**
+	 * Checks how many games a player won this session
+	 * @param player
+	 * @return the number of games
+	 */
+	public int winCount(int player) {
+		return players[player & 1].getScore();
+	}
+
+	/**
+	 * Checks how many games a neither player won this session
+	 * @return the number of games
+	 */
+	public int tieCount() {
+		return num_ties;
+	}
+
+	//////////////////////////////////
+	//		PUBLIC VARIABLES		//
+	//////////////////////////////////
+
+	//	The player characters are these- and can change at will
+	public final static char
+		EMPTY = '.',
+		PLAYER1 = 'X',
+		PLAYER2 = 'O';
+	
+	//	The fitness modes that are supported by the game so far are indexed this way
+	public static final int
+		NONE = 0,
+		DYLAN_FITNESS = 3,
+		ALEX_FITNESS = 4,
+		ANN_FITNESS = 1,
+		CLASSIFIER_FITNESS = 2;
+	
+	//////////////////////////////////////////////////
+	//		CONSTRUCTOR AND PRIVATE VARIABLES		//
+	//////////////////////////////////////////////////
 	
 	/**
 	 * Constructs a new Polar Tic-Tac-Toe game.
@@ -849,220 +1207,27 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	Allow the keyboard input to be run
 		frame.addKeyListener(this);
-			
+		
+		//	Learing agents
+		//classifier = new RBFClassifier(48, 00, 3, 0.1f, 0.15f, "data/test.csv");
+		
 		//	Some new arrays need to be made
 		players = new Player[2];
-
 		players[0] = players[1] = null;
 		board = new char[4][12];
 		available_locations = new boolean[4][12];
 		history = new Location[48];
 		fitnesses = new int[48];
+		
+		//	Finally start the game
 		turn = 0;
 		gameon = true;
 	}
 	
-	/**
-	 * Gets the turn count of the current play.
-	 * @return The current turn
-	 */
-	public int getTurn() {
-		return turn;
-	}
 	
-	/**
-	 * Signals to the current player that a mouse input has been enterred and the Location of that click
-	 * @param radius The loop from the center closest to the mouse on click
-	 * @param theta The spoke on the loop closest to the mouse location on click
-	 */
-	public void receiveMouseInput(int radius, int theta) {
-		this.players[turn & 1].receiveMouseInput(radius, theta);
-	}
-	
-	/**
-	 * Get the move made at the nth point in history
-	 * @param n The move number
-	 * @return The location of that move or null if it hasn't been played yet
-	 */
-	public Location getNthMoveMade(int n){
-		//	Make sure the move exists
-		if (-1 < n && n < turn){ 
-			return history[n];
-		}
-		
-		//	Null indicates no move
-		return null;
-	}
-	/**
-	 * Get the fitness of the board at the given state
-	 * @param n The move number
-	 * @return The fitness during that turn
-	 */
-	public int getNthFitness(int n) {
-		if (-1 < n && n < turn) {
-			return fitnesses[n];
-		}
-		return 0;
-	}
-	
-	/**
-	 * Peaks at the marking at a location
-	 * @param location
-	 * @return The marking
-	 */
-	public char peek(Location location) {
-		return board[location.r][location.t];
-	}
-	
-	/**
-	 * Peaks at the marking at a location
-	 * @param radius The ring to check
-	 * @param theta The spoke to check
-	 * @return The marking
-	 */
-	public char peek(int radius, int theta) {
-		return board[radius][theta];
-	}
-	
-	/**
-	 * Query the player for its name
-	 * @param player The player number to check
-	 * @return The name of that player
-	 */
-	public String getPlayerName(char player) {
-		try {
-			return players[getPlayerIndex(player)].getName();
-		}
-		catch (ArrayIndexOutOfBoundsException e){
-			return "Unknown Player";
-		}
-	}
-	
-	/**
-	 * Gets the index in the players array of a player
-	 * @param player The player to check
-	 * @return The index of that player in the players array
-	 */
-	public int getPlayerIndex(char player) {
-		return player == PLAYER1 ? 0 : player == PLAYER2 ? 1 : -1;
-	}
-	/**
-	 * Get the symbol associated with the Player
-	 * @param player The Player object to test with
-	 * @return The player's symbol or PolarTTT.EMPTY if the player isn't in the game
-	 */
-	public char getPlayerSymbol(Player player) {
-		return players[0] == player ? PLAYER1 : players[1] == player ? PLAYER2 : EMPTY;
-	}
-	
-	/**
-	 * Determines if a move is available to play
-	 * @param location The location to test
-	 * @return Whether to allow that play
-	 */
-	public boolean moveIsAvailable(Location location) {
-		return available_locations[location.r][location.t];
-	}
-	
-	/**
-	 * Determines updates the available_locations and available_locations_l arrays to match the game state
-	 */
-	public void findAvailableMoves(){
-		
-		//	Track how many are available
-		int count = 0;
-		
-		//	Check every spot
-		for (int i = 0; i < 4; i++){
-			for (int j = 0; j < 12; j++){
-
-				//	Anywhere is legal on first turn
-				if (turn == 0) {
-					available_locations[i][j] = true;
-				}
-				
-				//	If the spot is taken then it's not available
-				else if (board[i][j] != '.'){
-					available_locations[i][j] = false;
-				}
-				
-				
-				//	Spot is available if it has an adjacent taken
-				else {
-					available_locations[i][j] = hasAdjacent(i, j);
-				}
-				
-				//	Keep count
-				if (available_locations[i][j]) {
-					count++;
-				}
-			}
-		}
-		
-		if (count == 0) {
-			available_locations_l = null;
-		}
-		else {
-			available_locations_l = new Location[count];
-			for (int r = 0; r < 4; r++){
-				for (int t = 0; t < 12; t++){
-					if (available_locations[r][t]){
-						available_locations_l[--count] = new Location(r, t);
-					}
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Gets all available locations.
-	 * @return An array of all locations that are legal moves
-	 */
-	public Location[] allAvailableLocations(){
-		
-		//	It's fine to do this because the boolean array is used for logic;
-		//	if the player tampers with this array, it won't affect the game.
-		return available_locations_l;
-	}
-	
-	/**
-	 * Determines if a location is adjacent to a space that a player picked.
-	 * @param r The ring
-	 * @param t The spoke
-	 * @return Whether there is any adjacent taken location
-	 */
-	private boolean hasAdjacent(char[][] board, int r, int t){
-		
-		//	Get all neighbors
-		Location[] neighbors = new Location(r, t).adjacentLocations();
-		 
-		//	Check all neighbors
-		for (Location location : neighbors){
-			if (peek(location) != EMPTY){
-				return true;
-			}
-		}
-		
-		//	None adjacent
-		return false;
-	}
-	
-	private boolean hasAdjacent(int r, int t) {
-		return hasAdjacent(board, r, t);
-	}
-	
-	public int gameCount() {
-		return num_games;
-	}
-	
-	public int winCount(int player) {
-		return players[player & 1].getScore();
-	}
-	public int tieCount() {
-		return num_ties;
-	}
-	public final static char EMPTY = '.', PLAYER1 = 'X', PLAYER2 = 'O';
+	//	Private variables
 	private GameCanvas canvas;
+	private RBFClassifier classifier;
 	private Frame frame;
 	private char[][] board;
 	private Player[] players;
@@ -1072,10 +1237,5 @@ public class PolarTTT extends KeyAdapter{
 	private int fitnesses[];
 	private int turn, fitness, num_games = 0, num_ties = 0;
 	private boolean gameon, isVisible = true;
-	public static final int
-		NONE = 0,
-		DYLAN_FITNESS = 3,
-		ALEX_FITNESS = 4,
-		ANN_FITNESS = 1,
-		CLASSIFIER_FITNESS = 2;
+	private ArrayList<int[]> data = new ArrayList<int[]>();
 }

@@ -7,7 +7,32 @@ import Logic.Main;
 public class RBFClassifier {
 	
 	protected RBFNetwork network;
-	
+
+	/**
+	 * Builds a manager for a Radial-Basis Function network which will classify
+	 * input into num_output possible classes.
+	 * @param num_inputs The number of inputs into the network
+	 * @param num_gaussian The number of hidden nodes in the network
+	 * @param num_output The number of categories (the output layer size).
+	 */
+	public RBFClassifier(int num_inputs, int num_gaussian, int num_output, float learning_rate, float gaussian_width, String learndata) {
+		network = new RBFNetwork(num_inputs, num_gaussian, num_output, learning_rate, gaussian_width);
+		float[][] data = Main.csv_to_float(learndata);
+		set_centers_w("data/classifier_centers.csv", data, num_gaussian);
+		int x = 0;
+		System.out.println("Learning from input data");
+		for (float[] line : data) {
+			if (x++ % 1000 == 0) {
+				Main.sout("Number of lines processed", x);
+			}
+
+			learn(line, (int)line[line.length - 1]);
+		}
+		System.out.println("Done!\n");
+		
+		save_weights("data/classifier_weights.csv");
+	}
+
 	/**
 	 * Builds a manager for a Radial-Basis Function network which will classify
 	 * input into num_output possible classes.
@@ -17,6 +42,8 @@ public class RBFClassifier {
 	 */
 	public RBFClassifier(int num_inputs, int num_gaussian, int num_output, float learning_rate, float gaussian_width) {
 		network = new RBFNetwork(num_inputs, num_gaussian, num_output, learning_rate, gaussian_width);
+		set_centers_r("data/classifier_centers.csv");
+		get_weights("data/classifier_weights.csv");
 	}
 	
 	/**
@@ -41,20 +68,31 @@ public class RBFClassifier {
 		return best;
 	}
 	
-	
-	public void learn(float[] input, float[] outcome) {
+	public float[] learn(float[] input, int real) {
+		if (real < 0) {
+			System.out.println("Failure to classify!");
+			return null;
+		}
 		float[] out = network.get_output(input);
+		
+		//	Classify on {0, 1, 0} for example with 1 being set to the correct class
+		float[] outcome = new float[out.length];
+		for (int i = 0; i < outcome.length; i++) {
+			outcome[i] = 0;
+		}
+		outcome[real] = 1;
 		
 		
 		//	Learning requires "backpropagation"
 		//	swapping these parameters fixed the world somehow.
 		network.back_propogate(
 				
-				//	The expected is what the network thinks will happen
+				//	The actual is given based on the data
 				outcome,
 				
-				//	The actual is given based on the data
+				//	The expected is what the network thinks will happen
 				out);
+		return out;
 	}
 
 	/**
@@ -64,17 +102,20 @@ public class RBFClassifier {
 	 * @param data The experimental data
 	 * @param num_gaussian
 	 */
-	public void set_weights_w(String filename, float[][] data, int num_gaussian) {
-		
+	public void set_centers_w(String filename, float[][] data, int num_gaussian) {
+		System.out.println("Learning center placement from data.");
 		//	make k-means clusters
 		float[][] kmeans = kmeans(data, num_gaussian);
 		
-		Main.float_to_csv(filename, kmeans);
+		System.out.println("Done! Saving to file " + filename);
+		Main.float_to_csv(filename, kmeans, false);
+		System.out.println("Done! Assigning clusters...");
 
 		//	Simply these clusters to the hidden layer
 		for (int i = 0; i < kmeans.length; i++) {
 			network.gnodes[i].set_centers(kmeans[i]);
 		}
+		System.out.println("Done!\n");
 	}
 	
 	/**
@@ -82,13 +123,35 @@ public class RBFClassifier {
 	 * the data to a file to read for later.
 	 * @param filename The input file
 	 */
-	public void set_weights_r(String filename) {
-		float[][] centers = Main.csv_to_float("centers.csv");
+	public void set_centers_r(String filename) {
+		float[][] centers = Main.csv_to_float(filename);
 		for (int i = 0; i < centers.length; i++) {
 			network.gnodes[i].set_centers(centers[i]);
 		}
 	}
 	
+	/**
+	 * Set the weights of the network's output nodes into those specified by a file
+	 * @param filename The file
+	 */
+	public void get_weights(String filename) {
+		float[][] weights = Main.csv_to_float(filename);
+		for (int i = 0; i < network.onodes.length; i++) {
+			network.onodes[i].weights = weights[i];
+		}
+	}
+	
+	/**
+	 * Save the weights of the current network's output nodes into the file
+	 * @param filename The file
+	 */
+	public void save_weights(String filename) {
+		float[][] weights = new float[network.gnodes.length][network.onodes.length];
+		for (int i = 0; i < network.onodes.length; i++) {
+			weights[i] = network.onodes[i].weights;
+		}
+		Main.float_to_csv(filename, weights, false);
+	}
 
 	/**
 	 * Applies k-means clustering on a data file into a given number of
@@ -111,11 +174,13 @@ public class RBFClassifier {
 		HashMap<float[], Integer> old_assignments = null;
 		boolean changed = true;
 		
+		int x = 0;
+		
 		//	Run the loop. Terminate when there is no change because
 		//	this function is proven to terminate without requiring
 		//	an infinite convergence.
 		while (changed) {
-			
+			Main.sout("Running K-Means", x++);
 			changed = false;
 			HashMap<float[], Integer> assignments = new HashMap<>();
 			float[][] new_centers = new float[num_gaussian][data[0].length];
@@ -181,7 +246,7 @@ public class RBFClassifier {
 	 */
 	public static double euclidean_distance(float[] a, float[] b) {
 		double sum = 0.0;
-		for (int i = 0; i < a.length; i++) {
+		for (int i = 0; i < a.length && i < b.length; i++) {
 			sum += Math.pow(a[i]-b[i],2);
 		}
 		return Math.sqrt(sum);
