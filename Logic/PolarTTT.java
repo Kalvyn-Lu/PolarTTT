@@ -13,13 +13,7 @@ import RBFClassifier.RBFClassifier;
  * The PolarTTT class 
  */
 public class PolarTTT extends KeyAdapter{
-	
-	
-	//	Kalvyn should do this
-	private int neuralFitness(char[][]board) {
-		return 0;
-	}
-	
+		
 	/**
 	 * Starts the game from scratch
 	 */
@@ -426,7 +420,7 @@ public class PolarTTT extends KeyAdapter{
 		int f = 0;
 		switch (fitness_mode) {
 		case DYLAN_FITNESS:
-			f= dylanFitness(board);
+			f= dylanFitness(board, player);
 			break;
 		case ALEX_FITNESS:
 			f=alexFitness(board, player);
@@ -448,16 +442,17 @@ public class PolarTTT extends KeyAdapter{
 	}
 	
 	private int alexFitness(char[][] state, char player) {
-		return heuristic(state, player);
+		return (PLAYER2 == player ? -1 : 1) * heuristic(state, player);
 	}
 	
-	public int expand(char[][] state, char playingPlayer, int x, int y, int d) {
+	public static int expand(char[][] state, char playingPlayer, int x, int y, int d) {
         int mx = state.length;
         int my = state[0].length;
-        if (state[x][y] != EMPTY) {
+        if (state[x][y] != EMPTY) { //do nothing if the cell is not empty
             return 0;
         }
-        //0 is up-down, 1 is sw-ne, 2 is left-right, 3 is nw-se
+        //simple switch to test the 4 directions to test
+        //0 is n-s, 1 is sw-ne, 2 is e-w, 3 is nw-se
         int dx, dy;
         switch (d) {
             case 0:
@@ -476,59 +471,71 @@ public class PolarTTT extends KeyAdapter{
                 dx = 1;
                 dy = 1;
         }
-        int hfp1 = 0;
+        int hfp1 = 0; //counter for How Far 
         int tx = posMod(x + dx, mx);
         int ty = posMod(y + dy, my);
         char type1 = state[tx][ty];
         boolean hb1 = false;
         if (type1 != EMPTY) {
             hfp1++;
+            //scans along direction until reaching a different type of cell
+            //counts length
+            //stops if it reaches starting point
             while (state[tx][ty] == type1 && !(tx == x && ty == y)) {
                 tx = posMod(tx + dx, mx);
                 ty = posMod(ty + dy, my);
                 hfp1++;
             }
-            if (state[tx][ty] != EMPTY) hb1 = true;
+            //test if this chain is blocked at the end
+            if (state[tx][ty] != EMPTY) {
+                hb1 = true;
+            }
         }
-        int hfp2 = 0;
-        tx = posMod(x - dx, mx);
-        ty = posMod(y - dy, my);
-        char type2 = state[tx][ty];
+        //check the opposite direction
+        int hfp2 = 0; //counter for How Far 2
+        int tx2 = posMod(x - dx, mx);
+        int ty2 = posMod(y - dy, my);
+        char type2 = state[tx2][ty2];
         boolean hb2 = false;
-        if (type2 != EMPTY) {
+        if (type2 != EMPTY && !hb1 && !(tx2 == tx && ty2 == ty)) {
             hfp2++;
-            while (state[tx][ty] == type1 && !(tx == x && ty == y)) {
-                tx = posMod(tx - dx, mx);
-                ty = posMod(ty - dy, my);
+            while (state[tx2][ty2] == type1 && !(tx2 == x && ty2 == y)) {
+                tx2 = posMod(tx2 - dx, mx);
+                ty2 = posMod(ty2 - dy, my);
                 hfp2++;
             }
-            if (state[tx][ty] != EMPTY) hb2 = true;
+            //test if this chain is blocked at the end
+            if (state[tx2][ty2] != EMPTY) {
+                hb2 = true;
+            }
         }
-        if (type1==type2) {
-            if (hfp1+hfp2 >= 4) return ((type1==playingPlayer)?1:-1) * Integer.MAX_VALUE;
-            else if (hb2 && hb1) return 0; //same type, but can't hit total length 4. Return 0, bad spot.
-            else return hfp1+hfp2; //else return sum
-        } else {
-            if (hfp1 >= 4 && type1 == playingPlayer) return ((type1==playingPlayer)?1:-1) * Integer.MAX_VALUE;
-            if (hfp2 >= 4 && type2 == playingPlayer) return ((type2==playingPlayer)?1:-1) * Integer.MAX_VALUE;
-             
+ 
+        if (type1 == type2) {
+            if (hfp1 + hfp2 >= 4) { //if the chain is >= win condition, return val
+                return ((type1 == playingPlayer) ? 1 : -1) * (hfp1 + hfp2);
+            } else if (hb2 && hb1) { //if both sids of the chain are blocked
+                return 0; //bad chain
+            } else { //means that it is unblocked, verify that I can make whole chain
+                return ((type1 == playingPlayer) ? 1 : -1) * (hfp1 + hfp2); //this is where it potentially gets tricked
+            }
+        } else { //if they are different types, 
             if (hfp1 > hfp2) {
-                return ((type1==playingPlayer)?1:-1) * hfp1;
+                return ((type1 == playingPlayer) ? 1 : -1) * hfp1;
             } else {
-                return ((type2==playingPlayer)?1:-1) * hfp2;
+                return ((type2 == playingPlayer) ? 1 : -1) * hfp2;
             }
         }
     }
-     
-    public int heuristic(char[][] state, char playingPlayer) {
-        int count = 0;
-        for (int i = 0; i < state.length; i++) {
-            for (int j = 0; j < state[0].length; j++) {
-                for (int k = 0; k < 4; k++) {
-                    int tcount = expand(state, playingPlayer, i, j, k);
+ 
+    public static int heuristic(char[][] state, char playingPlayer) {
+        int count = 0; //longest potential chain
+        for (int i = 0; i < state.length; i++) { //each row
+            for (int j = 0; j < state[0].length; j++) { //each col
+                for (int k = 0; k < 4; k++) { //each of 4 directions
+                    int tcount = expand(state, playingPlayer, i, j, k); //find potential chain length in this direction
                     if (Math.abs(tcount) == Math.abs(count)) { //prefer offensive
-                        count = (tcount>count)?tcount:count;
-                    } else if (Math.abs(tcount) > Math.abs(count)) {
+                        count = (tcount > count) ? tcount : count;
+                    } else if (Math.abs(tcount) > Math.abs(count)) { //take chain of higher magnitude
                         count = tcount;
                     }
                 }
@@ -536,283 +543,171 @@ public class PolarTTT extends KeyAdapter{
         }
         return count;
     }
- 
+	 
+    /**
+     * Find the modulo of a by b, requiring the range to be [0,b)
+     * @param a The value to modulo
+     * @param b The modulo
+     * @return The positive modulo
+     */
     public static int posMod(int a, int b) {
         return (a % b + b) % b;
     }
     
 	
-	
-	private int dylanFitness(char[][] board) {
-		//	Todd's edit:
-		//	Not the most efficient check but allows for AI to account for winning states
-		/*for (int r = 0; r < 4; r++) {
-			for (int t = 0; t < 12; t++) {
-				if (win(board, PLAYER1, r, t)) {
-					return WIN_WEIGHT;
-				}
-				else if (win (board, PLAYER2, r, t)) {
-					return -WIN_WEIGHT;
-				}
-			}
-		}*/
+	/**
+	 * Evaluates the state of the board as a zero-sum game
+	 * @param board The state to evaluate
+	 * @return The fitness of the board
+	 */
+	private int dylanFitness(char[][] board, char player) {
 		
-		String str, str2;
+		//	Track as we go
 		int fitness = 0;
-		int ring,spoke,diagonal,p1Counter,p2Counter;
 		
-		for(spoke = 0; spoke<12; spoke++)//iterating through the spokes
-		{
-			p1Counter = 0;
-			p2Counter = 0;
+		//iterating through the spokes
+		for(int spoke = 0; spoke < 12; spoke++) {
+			
+			//	Check every value on this spoke
+			char[] vals = {
+				board[0][spoke],
+				board[1][spoke],
+				board[2][spoke],
+				board[3][spoke]
+			};
+			
+			//	See how good it is
+			fitness += dylan_helper(vals, player);
 
-			str = ""+board[0][spoke]+board[1][spoke]+board[2][spoke]+board[3][spoke]+"";
-                        if(str.equals("XXXX")){return WIN_WEIGHT;}
-                        if(str.equals("OOOO")){return -WIN_WEIGHT;}
-			for(int a = 0; a<4; a++)
-			{
-				if(str.charAt(a) == PLAYER1) p1Counter++;
-				if(str.charAt(a) == PLAYER2) p2Counter++;
-			}
-			if(p1Counter != 0 && p2Counter != 0){}//both player on this spoke, no possible win
-			else if(p1Counter == 0 && p2Counter ==0){}//neither player on this spoke, trivial
-			else
-			{
-				fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the spoke
+			//	Found a win!
+			if (fitness <= -WIN_WEIGHT || WIN_WEIGHT <= fitness) {
+				return fitness;
 			}
 		}
-		for(diagonal = 0; diagonal<24; diagonal++)//iterating through the diagonals
-		{
-			p1Counter = 0;
-			p2Counter = 0;
+		
+		//iterating through the diagonals
+		for (int diagonal = 0; diagonal < 12; diagonal++) {
+			
+			//	Counterclockwise diagonals
+			char[] vals = {
+				board[0][posMod(diagonal    , 12)],
+				board[1][posMod(diagonal + 1, 12)],
+				board[2][posMod(diagonal + 2, 12)],
+				board[3][posMod(diagonal + 3, 12)],
+			};
+			
+			//	Check them
+			fitness += dylan_helper(vals, player);
+			
+			//	Clockwise diagonals
+			vals[0] = board[0][posMod(diagonal    , 12)];
+			vals[1] = board[1][posMod(diagonal - 1, 12)];
+			vals[2] = board[2][posMod(diagonal - 2, 12)];
+			vals[3] = board[3][posMod(diagonal - 3, 12)];
+			
+			//	Check them
+			fitness += dylan_helper(vals, player);
 
-			Location[] locations = dylanDiagonal(diagonal);
-			str = ""+board[locations[0].r][locations[0].t]+
-					board[locations[1].r][locations[1].t]+
-					board[locations[2].r][locations[2].t]+
-					board[locations[3].r][locations[3].t]+"";
-                        if(str.equals("XXXX")){return WIN_WEIGHT;}
-                        if(str.equals("OOOO")){return -WIN_WEIGHT;}
-			for(int a = 0; a<4; a++)
-			{
-				if(str.charAt(a) == PLAYER1) p1Counter++;
-				if(str.charAt(a) == PLAYER2) p2Counter++;
-			}
-			if(p1Counter != 0 && p2Counter != 0){}//both player on this diagonal, no possible win
-			else if(p1Counter == 0 && p2Counter ==0){}//neither player on this diagonal, trivial
-			else
-			{
-				fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the diagonal
+			//	Found a win!
+			if (fitness <= -WIN_WEIGHT || WIN_WEIGHT <= fitness) {
+				return fitness;
 			}
 		}
-		for(ring = 0; ring<4; ring++)//iterating through the rings
-		{
-			str = ""+board[ring][0]+
-					board[ring][1]+
-					board[ring][2]+
-					board[ring][3]+
-					board[ring][4]+
-					board[ring][5]+
-					board[ring][6]+
-					board[ring][7]+
-					board[ring][8]+
-					board[ring][9]+
-					board[ring][10]+
-					board[ring][11]+"";
-			str2 = ""+board[ring][5]+
-					board[ring][6]+
-					board[ring][7]+
-					board[ring][8]+
-					board[ring][9]+
-					board[ring][10]+
-					board[ring][11]+
-					board[ring][0]+
-					board[ring][1]+
-					board[ring][2]+
-					board[ring][3]+
-					board[ring][4]+""; 
-			if(     str.contains("XXXX")||
-                                str.contains(".XXX.")||
-                                str2.contains(".XXX.")) return WIN_WEIGHT;
-			if(     str.contains("OOOO")||
-                                str.contains(".OOO.")||
-                                str2.contains(".OOO.")) return -WIN_WEIGHT;
+		
+		//iterating through the rings
+		for(int ring = 0; ring< 4 ; ring++) {
+			
+			//	Check the whole string
+			String str = new String(board[ring]);
+			
+			//	Build the wrapping
+			str += str.substring(0, 6);
+			
+			//	With proper play, it's impossible to lose if you have the two-sided win case
+			if (str.contains("XXXX") || str.contains(".XXX.")) {
+				return WIN_WEIGHT;
+			}
+			
+			//	Same check but with minimizer
+			if (str.contains("OOOO") || str.contains(".OOO.")) {
+				return -WIN_WEIGHT;
+			}
+			
 			//this accounts for wins and wins that are impossible to block, str1 does not work if the string goes over the 11-0 border which is why str2 is needed
-			for(int b = 0; b<12; b++)
+			for(int b = 0; b < 12; b++)
 			{
-				p1Counter = 0;
-				p2Counter = 0;
-				for(int a = 0; a<4; a++)
-				{
-					if(str.charAt((a+b)%12) == PLAYER1) p1Counter++;
-					if(str.charAt((a+b)%12) == PLAYER2) p2Counter++;
-				}
-				if(p1Counter != 0 && p2Counter != 0){}//both player on this ring, no possible win
-				else if(p1Counter == 0 && p2Counter ==0){}//neither player on this ring, trivial
-				else
-				{
-					fitness += (p1Counter*p1Counter - p2Counter*p2Counter);//right now this applies the square of the number of marks on the ring
+				
+				//	Build the string yet again
+				fitness += dylan_helper(str.substring(b, b + 4).toCharArray(), player);
+				
+				//	Found a win!
+				if (fitness <= -WIN_WEIGHT || WIN_WEIGHT <= fitness) {
+					return fitness;
 				}
 			}
 		}
 		return fitness;
 	}
-	private Location[] dylanDiagonal(int diagonal)//this is a lookup table to avoid calculation
-	{
-		Location[] locations = new Location[4];
-		for(int a = 0; a<4; a++)
-		{
-			locations[a] = new Location(0,0);
+	
+	private int dylan_helper(char[] vals, char player) {
+		
+		//	It's my turn and I can win!
+		//	Test the middle two match
+		if (player == vals[1] && player == vals[2]) {
+			
+			//	Test that there are three in a row with the third open
+			if (player == vals[0] && EMPTY == vals[3]
+			||	player == vals[3] && EMPTY == vals[0]) {
+				
+				//	I win!
+				return (player == PLAYER1 ? WIN_WEIGHT : -WIN_WEIGHT);
+			}
 		}
-		switch (diagonal)
-		{
-			case 0:
-				locations[0] = new Location(0,0);
-				locations[1] = new Location(1,1);
-				locations[2] = new Location(2,2);
-				locations[3] = new Location(3,3);
-				break;
-			case 1:
-				locations[0] = new Location(0,1);
-				locations[1] = new Location(1,2);
-				locations[2] = new Location(2,3);
-				locations[3] = new Location(3,4);
-				break;
-			case 2:
-				locations[0] = new Location(0,2);
-				locations[1] = new Location(1,3);
-				locations[2] = new Location(2,4);
-				locations[3] = new Location(3,5);
-				break;
-			case 3:
-				locations[0] = new Location(0,3);
-				locations[1] = new Location(1,4);
-				locations[2] = new Location(2,5);
-				locations[3] = new Location(3,6);
-				break;
-			case 4:
-				locations[0] = new Location(0,4);
-				locations[1] = new Location(1,5);
-				locations[2] = new Location(2,6);
-				locations[3] = new Location(3,7);
-				break;
-			case 5:
-				locations[0] = new Location(0,5);
-				locations[1] = new Location(1,6);
-				locations[2] = new Location(2,7);
-				locations[3] = new Location(3,8);
-				break;
-			case 6:
-				locations[0] = new Location(0,6);
-				locations[1] = new Location(1,7);
-				locations[2] = new Location(2,8);
-				locations[3] = new Location(3,9);
-				break;
-			case 7:
-				locations[0] = new Location(0,7);
-				locations[1] = new Location(1,8);
-				locations[2] = new Location(2,9);
-				locations[3] = new Location(3,10);
-				break;
-			case 8:
-				locations[0] = new Location(0,8);
-				locations[1] = new Location(1,9);
-				locations[2] = new Location(2,10);
-				locations[3] = new Location(3,11);
-				break;
-			case 9:
-				locations[0] = new Location(0,9);
-				locations[1] = new Location(1,10);
-				locations[2] = new Location(2,11);
-				locations[3] = new Location(3,0);
-				break;
-			case 10:
-				locations[0] = new Location(0,10);
-				locations[1] = new Location(1,11);
-				locations[2] = new Location(2,0);
-				locations[3] = new Location(3,1);
-				break;
-			case 11:
-				locations[0] = new Location(0,11);
-				locations[1] = new Location(1,0);
-				locations[2] = new Location(2,1);
-				locations[3] = new Location(3,2);
-				break;
-			case 12:
-				locations[0] = new Location(0,0);
-				locations[1] = new Location(1,11);
-				locations[2] = new Location(2,10);
-				locations[3] = new Location(3,9);
-				break;
-			case 13:
-				locations[0] = new Location(0,1);
-				locations[1] = new Location(1,0);
-				locations[2] = new Location(2,11);
-				locations[3] = new Location(3,10);
-				break;
-			case 14:
-				locations[0] = new Location(0,2);
-				locations[1] = new Location(1,1);
-				locations[2] = new Location(2,0);
-				locations[3] = new Location(3,11);
-				break;
-			case 15:
-				locations[0] = new Location(0,3);
-				locations[1] = new Location(1,2);
-				locations[2] = new Location(2,1);
-				locations[3] = new Location(3,0);
-				break;
-			case 16:
-				locations[0] = new Location(0,4);
-				locations[1] = new Location(1,3);
-				locations[2] = new Location(2,2);
-				locations[3] = new Location(3,1);
-				break;
-			case 17:
-				locations[0] = new Location(0,5);
-				locations[1] = new Location(1,4);
-				locations[2] = new Location(2,3);
-				locations[3] = new Location(3,2);
-				break;
-			case 18:
-				locations[0] = new Location(0,6);
-				locations[1] = new Location(1,5);
-				locations[2] = new Location(2,4);
-				locations[3] = new Location(3,3);
-				break;
-			case 19:
-				locations[0] = new Location(0,7);
-				locations[1] = new Location(1,6);
-				locations[2] = new Location(2,5);
-				locations[3] = new Location(3,4);
-				break;
-			case 20:
-				locations[0] = new Location(0,8);
-				locations[1] = new Location(1,7);
-				locations[2] = new Location(2,6);
-				locations[3] = new Location(3,5);
-				break;
-			case 21:
-				locations[0] = new Location(0,9);
-				locations[1] = new Location(1,8);
-				locations[2] = new Location(2,7);
-				locations[3] = new Location(3,6);
-				break;
-			case 22:
-				locations[0] = new Location(0,10);
-				locations[1] = new Location(1,9);
-				locations[2] = new Location(2,8);
-				locations[3] = new Location(3,7);
-				break;
-			case 23:
-				locations[0] = new Location(0,11);
-				locations[1] = new Location(1,10);
-				locations[2] = new Location(2,9);
-				locations[3] = new Location(3,8);
-				break;																																				
+		
+		//	Start with no finds
+		int p1Counter = 0, p2Counter = 0;
+		for(int i = 0; i< 4 ; i++) {
+			char check_spot = vals[i];
+			if (check_spot == PLAYER1) {
+				
+				//	If both players are found, neither can win
+				if (p2Counter != 0) {
+					return 0;
+				}
+				
+				//	Otherwise tally
+				p1Counter++;
+			}
+			else if(check_spot == PLAYER2) {
+				
+				//	If both players are found, neither can win
+				if (p1Counter != 0) {
+					return 0;
+				}
+				
+				//	Otherwise tally
+				p2Counter++;
+			}
 		}
-		return locations;
+		
+		//	Found a win!
+		if (p1Counter == 4) {
+			return WIN_WEIGHT;
+		}
+		else if (p2Counter == 4) {
+			return -WIN_WEIGHT;
+		}
+		
+		//	returns the square of the result
+		return (p1Counter * p1Counter - p2Counter * p2Counter);
 	}
+	
+	
+	//	Kalvyn should do this
+	private int neuralFitness(char[][]board) {
+		return 0;
+	}
+
 	
 
 	/**
@@ -1209,7 +1104,7 @@ public class PolarTTT extends KeyAdapter{
 		frame.addKeyListener(this);
 		
 		//	Learing agents
-		//classifier = new RBFClassifier(48, 00, 3, 0.1f, 0.15f, "data/test.csv");
+		classifier = new RBFClassifier(48, 100, 3, 0.1f, 0.15f, "data/learnset.csv");
 		
 		//	Some new arrays need to be made
 		players = new Player[2];
