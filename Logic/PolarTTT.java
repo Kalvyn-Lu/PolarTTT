@@ -1110,15 +1110,27 @@ public class PolarTTT extends KeyAdapter{
                 int layer[] = {48,10,1};
                 net = new NeuralNetwork(layer);
                 float[][] data = Main.csv_to_float("data/learnset.csv");
+                int j = 0;
                 for(float[] line : data ){
                     float[] boardArr = new float[48];
+                    j++;
                     for(int i = 0; i < 48;i++){
                         boardArr[i]=line[i];
                     }
                     net.output(boardArr);
-                    net.backPropagation(line[47]);
-                    System.out.println(line[47]);
+                    try{
+                        net.backPropagation(line[48]);
+                    }
+                    catch(Exception E){
+                        for(int i = 0; i < line.length; i++){
+                            System.out.print((int)line[i]+",");
+                        }
+                        //System.out.println(line.length);
+                        System.out.println(j);
+                    }
+                    //System.out.println(line[48]);
                 }
+                net.printWeights();
 		
 		//	Some new arrays need to be made
 		players = new Player[2];

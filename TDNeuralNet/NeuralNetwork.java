@@ -6,7 +6,8 @@ public class NeuralNetwork {
     int[] layers;
     float[] lastOutput;
     float[] previousOutput;
-    
+    float learningRate = (float) 0.8;
+    float gamma =(float) 0.8;
     /**
      *
      * @param inLayers to initialize the Network. #indices = #of layers,
@@ -91,8 +92,7 @@ public class NeuralNetwork {
     }
 
     public void backPropagation(float win) {
-        float learningRate =(float) 0.8;
-        
+        learningRate *=gamma;
         //for all layers in the network, adjust the weights
         for(Neuron[] layers: net){
             //For each neuron in the layer, adjust the weight
@@ -100,16 +100,26 @@ public class NeuralNetwork {
                 //Iteration through weights from edges
                 for(int j = 0; j < layers[i].edges.size();j++){
                     //Adjust the weight
-                    layers[i].edges.get(i).weight +=learningRate * (lastOutput[0] - previousOutput[0]);
+                    layers[i].edges.get(j).weight +=learningRate * (lastOutput[0] - previousOutput[0]);
                     //switch case 0 win, 1 loss, 2 tie
-                    if(win==0)  layers[i].edges.get(i).weight += 1;
-                    else if(win == 1)  layers[i].edges.get(i).weight += -1;
-                    else  layers[i].edges.get(i).weight += 0;
+                    if(win==0)  layers[i].edges.get(j).weight += learningRate*.1;
+                    else if(win == 1)  layers[i].edges.get(j).weight +=learningRate* -0.1;
+                    else  layers[i].edges.get(j).weight +=learningRate* 0;
                 }
             }
         }
     }
     
+   public void printWeights(){
+        for(Neuron[] layers: net){
+            for(int i = 0; i < layers.length;i++){
+                for(int j = 0; j < layers[i].edges.size();j++){
+                   System.out.print( layers[i].edges.get(j).weight+",");
+                }
+            }
+        }
+    }
+
     
     /**
      * Print array for testing.Neuron -> [#of edges]
