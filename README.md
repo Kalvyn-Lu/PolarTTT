@@ -7,9 +7,11 @@ CSCI 446 Articial Intelligence Semester Project
 
 In progress:
 ========
--Setting up game to store game data for learning agents (Todd)
--Finalizing RBF Classifier for this game's use (Todd)
--Setting up TD ANN (Kalvyn)
+->Setting up game to store game data for learning agents (Todd)
+
+->Finalizing RBF Classifier for this game's use (Todd)
+
+->Setting up TD ANN (Kalvyn)
 
 Files:
 ========
@@ -70,7 +72,7 @@ learning agent.
 
 RBFClassifier.java: An object instantiated from this class is a classifier that manages the RBFNetwork
 and determines the best-fit class for given input according to the neural network simply by maximizing
-the output of the neural network. It also generates the hidden layer's weights as averages among the
+the output of the neural network. It also generates the Gaussian functions' centers as averages among the
 learning data. These averages are calculated with the k-means algorithm which is guaranteed to find
-local optima for the weights in a finite (and typically small) number of steps, unlike many methods of
+a local optimum for the centers in a finite (and typically small) number of steps, unlike many methods of
 approximation which require convergence.

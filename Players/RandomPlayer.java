@@ -8,7 +8,8 @@ import Logic.*;
  * Makes a random available move.
  */
 public class RandomPlayer extends Player {
-	public RandomPlayer() {
+	public RandomPlayer(int fitness_mode) {
+		super(fitness_mode);
 	}
 	
 	@Override

@@ -6,7 +6,8 @@ public class HumanPlayer extends Player {
 	/**
 	 * Constructs a human player
 	 */
-	public HumanPlayer() {
+	public HumanPlayer(int fitness_mode) {
+		super(fitness_mode);
 	}
 	
 	@Override

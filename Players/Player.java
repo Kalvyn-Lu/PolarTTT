@@ -6,7 +6,9 @@ public abstract class Player {
 	/**
 	 * Construct a player
 	 */
-	public Player() {}
+	public Player(int fitness_mode) {
+		this.fitness_mode = fitness_mode;
+	}
 	/**
 	 * It's your turn; make a move
 	 * @return The location to move
@@ -96,12 +98,15 @@ public abstract class Player {
 		return score;
 	}
 	
+	public int getFitnessMode() {
+		return fitness_mode;
+	}
 	
 	private int score = 0;
 	
 	public PolarTTT game;
 	protected boolean is_maximizer;
+	protected int fitness_mode;
 	private boolean mousereceived;
 	private Location mouseLocation;
 }
-

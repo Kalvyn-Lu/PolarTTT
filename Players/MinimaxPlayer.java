@@ -4,110 +4,170 @@ import Logic.*;
 
 public class MinimaxPlayer extends Player {
 	
+
+	public MinimaxPlayer(int fitness_mode) {
+		super(fitness_mode);
+	}
+	
 	@Override
 	public Location getChoice(Location[] options) {
-		return makeMove(game.theoreticalMove(options[0], '.'));
-	}
-	
-	@Override
-	public String getName() {
-		String name = "Minimax ";
-		switch (game.fitness_mode) {
-		case PolarTTT.DYLAN_FITNESS:
-			name = "Dylan's ";
-			break;
-		case PolarTTT.CLASSIFIER_FITNESS:
-			name = "Classifer ";
-			break;
-		case PolarTTT.ANN_FITNESS:
-			name = "RoxANNe ";
-			break;
+		if (options.length == 48) {
+			return options[(int)(Math.random() * 48)];
 		}
-		return name + num_plies + "p" + (use_pruning ? "+AB" : "");
-	}
-	
-	int turn = -1;
-	public int num_plies = 1;
-	public boolean use_pruning, setup = false;
-	public String[] menues = {"Ply count", "Use Alpha-Beta pruning?"};
-	public int current_menu = 0;
-	
-	public int minimax(char[][]state, int depth, boolean is_maxer) {
-		Location[] childs;
-		if (depth == 0 || (childs = findAvailableMoves(state)).length == 0) {
-			return game.getFitness(state);
+		else if (options.length == 0) {
+			throw new RuntimeException("No options provided!");
 		}
-		int bestVal = 0;
-		if (is_maxer) {
-			bestVal = Integer.MIN_VALUE;
-			for (Location child : childs) {
-				// do it
-				domove(state, child, is_maxer);
+		
+		Location[] bestPlays = new Location[options.length];
+		int num_best = 0, best_val = Integer.MIN_VALUE;
+		
+		//	Prepare for the worst
+		for (int i = 0; i < options.length; i++) {
+			char[][] theory = game.theoreticalMove(options[i], is_maximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
+			int theory_fitness = 0;
+			if (use_pruning) {
+				theory_fitness = minimax_with_pruning(theory, num_plies, !is_maximizer, Integer.MIN_VALUE, Integer.MAX_VALUE);
+			}
+			else {
+				theory_fitness = minimax(theory, num_plies, !is_maximizer);
+			}
+			
+			if (!is_maximizer) {
+				theory_fitness *= -1;
+			}
+			
+			//	Winning move- make it!
+			if (theory_fitness >= PolarTTT.WIN_WEIGHT) {
+				bestPlays[0] = options[i];
+				num_best = 0;
+				break;
+			}
+			
+			if (theory_fitness < best_val) {
+				continue;
+			}
+			if (best_val < theory_fitness) {
+				best_val = theory_fitness;
+				num_best = 0;
+			}
+			bestPlays[num_best++] = options[i];
+		}
+		return bestPlays[(int)(Math.random() * num_best)];
+	}
+
+	public int minimax(char[][] board, int ply, boolean is_maximizer){
+		
+		//	Base case: out of plies!
+		if (ply == 0) {
+			return game.getFitness(board, fitness_mode, is_maximizer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
+		}
+		
+		//	Find available moves
+		Location[] options = findAvailableMoves(board);
+		
+		//	Base case: Out of moves!
+		if (options.length == 0) {
+			return 0;
+		}
+		
+		if (is_maximizer) {
+			int best = Integer.MIN_VALUE;
+			for (Location choice : options) {
+				//	Preview a move
+				domove(board, choice, is_maximizer);
 				
+				int fitness = minimax(board, ply - 1, !is_maximizer);
 				
-				int val = minimax(state, depth - 1, !is_maxer);
+				//	Undo the preview
+				undomove(board, choice);
 				
-				// undo it
-				undomove(state, child);
-				
-				if (bestVal < val) {
-					bestVal = val;
+				if (best < fitness) {
+					best = fitness;
 				}
 			}
+			return best;
 		}
 		else {
-			bestVal = Integer.MAX_VALUE;
-			for (Location child : childs) {
-				//	do it
-				domove(state, child, is_maxer);
+			int best = Integer.MAX_VALUE;
+			for (Location choice : options) {
+				//	Preview a move
+				domove(board, choice, is_maximizer);
 				
-				int val = minimax(state, depth - 1, !is_maxer);
+				int fitness = minimax(board, ply - 1, !is_maximizer);
 				
-				//undo it
-				undomove(state, child);
+				//	Undo the preview
+				undomove(board, choice);
 				
-				if (bestVal > val) {
-					bestVal = val;
+				if (best > fitness) {
+					best = fitness;
 				}
 			}
+			return best;
 		}
-		
-		return bestVal;
 	}
+	
+	private int minimax_with_pruning(char[][] board, int ply, boolean is_maximizer, int alpha, int beta){
 		
-	public Location makeMove(char[][]state) {
-		Location[] childs = findAvailableMoves(state);
-		System.out.println(childs.length);
-		if (childs.length == 0) {
-			return null;
+		//	Base case: out of plies!
+		if (ply == 0) {
+			return game.getFitness(board, fitness_mode, is_maximizer ? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
 		}
-		Location bestChild = childs[0];
 		
-		//	do it
-		domove(state, childs[0], is_maximizer);
+		//	Find available moves
+		Location[] options = findAvailableMoves(board);
 		
-		int bestVal = minimax(state, num_plies, is_maximizer);
+		//	Base case: Out of moves!
+		if (options.length == 0) {
+			return 0;
+		}
 		
-		// undo it
-		undomove(state, childs[0]);
-		
-		for (int i = 1; i < childs.length; i++) {
-			
-			//	do it
-			domove(state, childs[i], is_maximizer);
-			
-			int childval = minimax(state, num_plies, is_maximizer);
-			
-			// undo it
-			undomove(state, childs[i]);
-			
-			if (childval > bestVal) {
-				bestChild = childs[i];
-				bestVal = childval;
+		//	I have no idea why but this negation which should not be there makes it work
+		if (is_maximizer) {
+			int best = Integer.MIN_VALUE;
+			for (Location choice : options) {
+				//	Preview a move
+				domove(board, choice, is_maximizer);
+				
+				int fitness = minimax(board, ply - 1, !is_maximizer);
+				
+				
+				//	Undo the preview
+				undomove(board, choice);
+				
+				alpha = Math.max(fitness, alpha);
+				if (beta <= alpha) {
+					return beta;
+				}
+				if (best < fitness) {
+					best = fitness;
+				}
+				
 			}
+			return best;
 		}
-		
-		return bestChild;
+		else {
+			int best = Integer.MAX_VALUE;
+			for (Location choice : options) {
+				//	Preview a move
+				domove(board, choice, is_maximizer);
+				
+				int fitness = minimax(board, ply - 1, !is_maximizer);
+				
+				//	Undo the preview
+				undomove(board, choice);
+				
+				beta = Math.min(fitness, beta);
+				
+				if (beta <= alpha) {
+					return alpha;
+				}
+				
+				if (best > fitness) {
+					best = fitness;
+				}
+			}
+			return best;
+		}
 	}
 	
 	public void domove(char[][] state, Location l, boolean is_maxer) {
@@ -180,5 +240,30 @@ public class MinimaxPlayer extends Player {
 		//	None adjacent
 		return false;
 	}
+	
 
+	@Override
+	public String getName() {
+		String name = "Minimax ";
+		switch (fitness_mode) {
+		case PolarTTT.DYLAN_FITNESS:
+			name = "Dylan's ";
+			break;
+		case PolarTTT.ALEX_FITNESS:
+			name = "Alex's ";
+			break;
+		case PolarTTT.CLASSIFIER_FITNESS:
+			name = "Classifer ";
+			break;
+		case PolarTTT.ANN_FITNESS:
+			name = "RoxANNe ";
+			break;
+		}
+		return name + num_plies + "p" + (use_pruning ? "+AB" : "");
+	}
+	int turn = -1;
+	public int num_plies = 1;
+	public boolean use_pruning, setup = false;
+	public String[] menues = {"Ply count", "Use Alpha-Beta pruning?"};
 }
+
