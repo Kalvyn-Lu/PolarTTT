@@ -5,6 +5,8 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import TDNeuralNet.*;
+
 import Players.*;
 import RBFClassifier.RBFClassifier;
 
@@ -1104,7 +1106,19 @@ public class PolarTTT extends KeyAdapter{
 		frame.addKeyListener(this);
 		
 		//	Learing agents
-		classifier = new RBFClassifier(48, 100, 3, 0.1f, 0.15f, "data/learnset.csv");
+		//classifier = new RBFClassifier(48, 100, 3, 0.1f, 0.15f, "data/learnset.csv");
+                int layer[] = {48,10,1};
+                net = new NeuralNetwork(layer);
+                float[][] data = Main.csv_to_float("data/learnset.csv");
+                for(float[] line : data ){
+                    float[] boardArr = new float[48];
+                    for(int i = 0; i < 48;i++){
+                        boardArr[i]=line[i];
+                    }
+                    net.output(boardArr);
+                    net.backPropagation(line[47]);
+                    System.out.println(line[47]);
+                }
 		
 		//	Some new arrays need to be made
 		players = new Player[2];
@@ -1123,6 +1137,7 @@ public class PolarTTT extends KeyAdapter{
 	//	Private variables
 	private GameCanvas canvas;
 	private RBFClassifier classifier;
+        private NeuralNetwork net;
 	private Frame frame;
 	private char[][] board;
 	private Player[] players;

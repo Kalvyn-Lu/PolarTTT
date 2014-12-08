@@ -6,16 +6,14 @@ public class NeuralNetwork {
     int[] layers;
     float[] lastOutput;
     float[] previousOutput;
-    float[] input;
     
     /**
      *
      * @param inLayers to initialize the Network. #indices = #of layers,
      * elements = #nodes
      */
-    public NeuralNetwork(float[] input,int[] layers) {
-        this.input = input;
-        this.layers = layers;
+    public NeuralNetwork(int[] layer) {
+        layers = layer;
         lastOutput = new float[layers[layers.length-1]];
         previousOutput = new float[layers[layers.length-1]];
         initializeNetwork();
@@ -92,7 +90,7 @@ public class NeuralNetwork {
         return copy;
     }
 
-    public void backPropogation() {
+    public void backPropagation(float win) {
         float learningRate =(float) 0.8;
         
         //for all layers in the network, adjust the weights
@@ -103,6 +101,10 @@ public class NeuralNetwork {
                 for(int j = 0; j < layers[i].edges.size();j++){
                     //Adjust the weight
                     layers[i].edges.get(i).weight +=learningRate * (lastOutput[0] - previousOutput[0]);
+                    //switch case 0 win, 1 loss, 2 tie
+                    if(win==0)  layers[i].edges.get(i).weight += 1;
+                    else if(win == 1)  layers[i].edges.get(i).weight += -1;
+                    else  layers[i].edges.get(i).weight += 0;
                 }
             }
         }
@@ -121,4 +123,11 @@ public class NeuralNetwork {
             System.out.println();
         }
     }
+//    public static void main(String[] args) {
+//        int layer[] = {10,10,1};
+//        float[]input = {1,1};
+//        NeuralNetwork net = new NeuralNetwork(layer);
+//        net.printArray(net.net);
+//        System.out.println(net.output(input)[0]);
+//    }
 }
