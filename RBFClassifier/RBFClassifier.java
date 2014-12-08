@@ -1,5 +1,6 @@
 package RBFClassifier;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 import Logic.Main;
@@ -105,7 +106,7 @@ public class RBFClassifier {
 	public void set_centers_w(String filename, float[][] data, int num_gaussian) {
 		System.out.println("Learning center placement from data.");
 		//	make k-means clusters
-		float[][] kmeans = kmeans(data, num_gaussian);
+		float[][] kmeans = KMeans(data, num_gaussian, 48);
 		
 		System.out.println("Done! Saving to file " + filename);
 		Main.float_to_csv(filename, kmeans, false);
@@ -146,7 +147,7 @@ public class RBFClassifier {
 	 * @param filename The file
 	 */
 	public void save_weights(String filename) {
-		float[][] weights = new float[network.gnodes.length][network.onodes.length];
+		float[][] weights = new float[network.onodes.length][network.onodes[0].weights.length];
 		for (int i = 0; i < network.onodes.length; i++) {
 			weights[i] = network.onodes[i].weights;
 		}
@@ -161,83 +162,67 @@ public class RBFClassifier {
 	 * @param num_gaussian The number of clusters
 	 * @return A list of centers for each hidden Gaussian node
 	 */
-	private static float[][] kmeans(float[][] data, int num_gaussian) {
-		
-		//	Make the list of centers- num_gaussian lists, each at the
-		//	length of the network input
-		float[][] centers = new float[num_gaussian][data[0].length];
-		
-		//	Initalize the first centers- force the initial clusters
-		System.arraycopy(data, 0, centers, 0, centers.length);
-		
-		//	Prepare the loop
-		HashMap<float[], Integer> old_assignments = null;
-		boolean changed = true;
-		
-		int x = 0;
-		
-		//	Run the loop. Terminate when there is no change because
-		//	this function is proven to terminate without requiring
-		//	an infinite convergence.
-		while (changed) {
-			Main.sout("Running K-Means", x++);
-			changed = false;
-			HashMap<float[], Integer> assignments = new HashMap<>();
-			float[][] new_centers = new float[num_gaussian][data[0].length];
-			
-			//	Assignments
-			int[] center_count = new int[num_gaussian];
-			for (float[] f : data) {
-				
-				//	Find the closest center
-				int min_index = 0;
-				double min_dis = euclidean_distance(centers[0], f);
-				for (int i = 1; i < centers.length; i++) {
-					double distance = euclidean_distance(centers[i], f);
-					if (distance < min_dis) {
-						min_dis = distance;
-						min_index = i;
-					}
-				}
-				
-				//	Save the this data point's closest center
-				assignments.put(f, min_index);
-				
-				//	Did the point change closest cluster since last time?
-				if (old_assignments == null || old_assignments.get(f) != min_index) {
-					changed = true;
-				}
-				
-				//	Make up new centers
-				for (int i = 0; i < f.length; i++) {
-					new_centers[min_index][i] += f[i];
-				}
-				
-				//	Count the number in this center (good for average later)
-				center_count[min_index]++;
-				
-			}
-			
-			//	Updates
-			for (int i = 0; i < num_gaussian; i++) {
-				for (int j = 0; j < new_centers[i].length; j++) {
-					
-					//	Average the centers
-					if (center_count[i] != 0) {
-						new_centers[i][j] /= center_count[i];
-					}
-				}
-			}
-			
-			//	store this iteration for next time
-			old_assignments = assignments;
-			centers = new_centers;
-		}
-		
-		//	Return the best
-		return centers;
-	}
-	
+	public static float[][] KMeans(float[][] data, int num_clusters, int input_length) {
+        float[][] centers = new float[num_clusters][input_length];
+        for (int i = 0; i < num_clusters; i++) {
+            System.arraycopy(data[i], 0, centers[i], 0, input_length);
+        }
+        HashMap<float[], Integer> assignments = new HashMap<>(); //hashmap representing the cluster each point is assigned to
+        boolean changed; //boolean to check if any points changed clusters
+        int x = 0;
+        do {
+        	Main.sout("KMeans Iteration:",x++);
+        	if (x % 100 == 0) {
+        		for (float[] arr : centers) {
+        			System.out.println(Arrays.toString(arr));
+        		}
+        	}
+            changed = false;
+            float[][] new_centers = new float[num_clusters][input_length];
+            int[] center_count = new int[num_clusters];
+            for (float[] f : data) { //O(n) 
+                int mindex = 0; //index of minimum cluster center
+                double mindis = euclideanSqrd(centers[0], f, input_length); //minimum distance to a center yet found
+                //find the closest center
+                for (int i = 1; i < centers.length; i++) { //O(k)
+                    double dis = euclideanSqrd(centers[i], f, input_length);
+                    if (dis < mindis) {
+                        mindis = dis;
+                        mindex = i;
+                    }
+                }
+                Integer old_assign = assignments.get(f); //the old assignment
+                if (old_assign == null || !old_assign.equals(mindex)) { //check if the assignment changed
+                    changed = true;
+                }
+                assignments.put(f, mindex); //assign point f to cluster mindex
+                for (int i = 0; i < input_length; i++) {
+                    new_centers[mindex][i] += f[i];
+                }
+                center_count[mindex]++; //increment the number of points in the cluster this point was asssigned to
+            }
+            for (int i = 0; i < num_clusters; i++) { //average the new centers
+                for (int j = 0; j < input_length; j++) {
+                	if (center_count[i] == 0) {
+                		System.out.println("a");
+                	}
+                    new_centers[i][j] /= center_count[i]; //center count should never be 0, might as well throw an error
+                }
+            }
+            centers = new_centers; //change centers
+        } while (changed); //case check
+        return centers;
+    }
+ 
+    public static double euclideanSqrd(float[] f1, float[] f2, int input_length) {
+        double sum = 0.0;
+        float d;
+        for (int i = 0; i < input_length; i++) {
+            d = f1[i] * f2[i];
+            sum += d * d;
+        }
+        return sum;
+    }	
 	/**
 	 * Gets the Euclidean distance between two vectors
 	 * @param a One vector
