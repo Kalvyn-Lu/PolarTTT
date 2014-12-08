@@ -54,7 +54,7 @@ public class Neuron {
      */
     
     public float activationFuntion(float n){
-        float function = (float) (1/(1 + Math.exp(n)));
+        float function = (float) (1.0/(1 + Math.exp(-n)));
         return function;
     }
 }
