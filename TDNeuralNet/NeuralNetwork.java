@@ -1,7 +1,5 @@
 package TDNeuralNet;
 
-import java.util.ArrayList;
-
 public class NeuralNetwork {
 
     Neuron[][] net;
@@ -110,13 +108,6 @@ public class NeuralNetwork {
         }
     }
     
-    public void train(){
-        float[] firstOutput = output(input);
-        for(int i = 0;i < 1000000; i++){
-            firstOutput = output(firstOutput);
-            backPropogation();
-        }
-    }
     
     /**
      * Print array for testing.Neuron -> [#of edges]
