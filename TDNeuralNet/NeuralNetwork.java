@@ -118,8 +118,8 @@ public class NeuralNetwork {
     }
 
     public static void main(String[] args) {
-        int[] layerd = new int[]{100,1000,10};
-        float[] input = new float[]{1, 1};
+        int[] layerd = new int[]{100,20,1};
+        float[] input = new float[]{1,0,1,-1};
         NeuralNetwork net = new NeuralNetwork(layerd);
         net.printArray(net.net);
         float[] boop = net.output(input);
