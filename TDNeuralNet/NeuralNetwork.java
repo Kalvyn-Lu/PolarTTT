@@ -1,17 +1,25 @@
 package TDNeuralNet;
 
+import java.util.ArrayList;
+
 public class NeuralNetwork {
 
     Neuron[][] net;
     int[] layers;
-
+    float[] lastOutput;
+    float[] previousOutput;
+    float[] input;
+    
     /**
      *
      * @param inLayers to initialize the Network. #indices = #of layers,
      * elements = #nodes
      */
-    public NeuralNetwork(int[] inLayers) {
-        layers = inLayers;
+    public NeuralNetwork(float[] input,int[] layers) {
+        this.input = input;
+        this.layers = layers;
+        lastOutput = new float[layers[layers.length-1]];
+        previousOutput = new float[layers[layers.length-1]];
         initializeNetwork();
     }
 
@@ -56,6 +64,7 @@ public class NeuralNetwork {
      */
     public float[] output(float[] input) {
         float[] tempInput = input;
+        previousOutput = copyArray(lastOutput);
         //for each layer in the neural net
         for (int i = 1; i < net.length; i++) {
             float[] output = new float[net[i].length];
@@ -66,6 +75,7 @@ public class NeuralNetwork {
             }
             //input for next layer is output of current layer
             tempInput = copyArray(output);
+            lastOutput = copyArray(tempInput);
         }
         return tempInput;
     }
@@ -85,7 +95,7 @@ public class NeuralNetwork {
     }
 
     public void backPropogation() {
-        float learningRate = 1;
+        float learningRate =(float) 0.8;
         
         //for all layers in the network, adjust the weights
         for(Neuron[] layers: net){
@@ -94,14 +104,18 @@ public class NeuralNetwork {
                 //Iteration through weights from edges
                 for(int j = 0; j < layers[i].edges.size();j++){
                     //Adjust the weight
-                    //layers[i].edges.get(i).weight += weightAdjustFunction
+                    layers[i].edges.get(i).weight +=learningRate * (lastOutput[0] - previousOutput[0]);
                 }
             }
         }
     }
     
     public void train(){
-        
+        float[] firstOutput = output(input);
+        for(int i = 0;i < 1000000; i++){
+            firstOutput = output(firstOutput);
+            backPropogation();
+        }
     }
     
     /**
@@ -120,12 +134,14 @@ public class NeuralNetwork {
     public static void main(String[] args) {
         int[] layerd = new int[]{100,20,1};
         float[] input = new float[]{1,0,1,-1};
-        NeuralNetwork net = new NeuralNetwork(layerd);
+        NeuralNetwork net = new NeuralNetwork(input,layerd);
         net.printArray(net.net);
         float[] boop = net.output(input);
-        for (int i = 0; i < boop.length; i++) {
+        net.train();
+                for (int i = 0; i < boop.length; i++) {
             System.out.print(boop[i] + " ");
         }
+        
     }
 
 }
