@@ -3,10 +3,10 @@ package TDNeuralNet;
 public class NeuralNetwork {
 
     Neuron[][] net;
-    int[] layers;
+    int[] layers = {48,400,1};
     float[] lastOutput;
     float[] previousOutput;
-    float learningRate = (float) 0.8;
+    float learningRate = (float) 1;
     float gamma =(float) 0.8;
     /**
      *
@@ -14,7 +14,7 @@ public class NeuralNetwork {
      * elements = #nodes
      */
     public NeuralNetwork(int[] layer) {
-        layers = layer;
+        //layers = layer;
         lastOutput = new float[layers[layers.length-1]];
         previousOutput = new float[layers[layers.length-1]];
         initializeNetwork();
@@ -102,8 +102,8 @@ public class NeuralNetwork {
                     //Adjust the weight
                     layers[i].edges.get(j).weight +=learningRate * (lastOutput[0] - previousOutput[0]);
                     //switch case 0 win, 1 loss, 2 tie
-                    if(win==0)  layers[i].edges.get(j).weight += learningRate*.1;
-                    else if(win == 1)  layers[i].edges.get(j).weight +=learningRate* -0.1;
+                    if(win==0)  layers[i].edges.get(j).weight += learningRate* 0.5;
+                    else if(win == 1)  layers[i].edges.get(j).weight +=learningRate* -0.5;
                     else  layers[i].edges.get(j).weight +=learningRate* 0;
                 }
             }

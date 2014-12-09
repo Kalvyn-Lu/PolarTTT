@@ -431,7 +431,8 @@ public class PolarTTT extends KeyAdapter{
 			f=classifyFitness(board);
 			break;
 		case ANN_FITNESS:
-			f=neuralFitness(board);
+			f=neuralFitness(board, player);
+                        f = player == PLAYER1 ? f : -f;
 			break;
 		case NONE:
 			return 0;
@@ -706,8 +707,25 @@ public class PolarTTT extends KeyAdapter{
 	
 	
 	//	Kalvyn should do this
-	private int neuralFitness(char[][]board) {
-		return 0;
+	private int neuralFitness(char[][]board, char player) {
+            float[]input=new float[48];
+            int counter = 0;
+            for(int i = 0; i < board.length;i++){
+                for(int j = 0; j < board[i].length;j++){
+                    switch (board[i][j]){
+                        case PLAYER1:
+                            input[counter++] = 1;
+                            break;
+                        case PLAYER2:
+                            input[counter++] = -1;
+                            break;
+                        case EMPTY:
+                            input[counter++] = 0;
+                            break;
+                    }
+                }
+            }
+		return (int)(net.output(input)[0] * 1000);
 	}
 
 	
@@ -864,6 +882,7 @@ public class PolarTTT extends KeyAdapter{
 	 * @param player The player number to check
 	 * @return The name of that player
 	 */
+       
 	public String getPlayerName(char player) {
 		try {
 			return players[getPlayerIndex(player)].getName();
@@ -1109,7 +1128,7 @@ public class PolarTTT extends KeyAdapter{
 		//classifier = new RBFClassifier(48, 100, 3, 0.1f, 0.15f, "data/learnset.csv");
                 int layer[] = {48,10,1};
                 net = new NeuralNetwork(layer);
-                float[][] data = Main.csv_to_float("data/learnset.csv");
+                float[][] data = Main.csv_to_float("data/test.csv");
                 int j = 0;
                 for(float[] line : data ){
                     float[] boardArr = new float[48];
@@ -1130,7 +1149,7 @@ public class PolarTTT extends KeyAdapter{
                     }
                     //System.out.println(line[48]);
                 }
-                net.printWeights();
+             //  net.printWeights();
 		
 		//	Some new arrays need to be made
 		players = new Player[2];
