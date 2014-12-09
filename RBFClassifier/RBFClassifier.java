@@ -7,7 +7,7 @@ import Logic.Main;
 
 public class RBFClassifier {
 	
-	protected RBFNetwork network;
+	public RBFNetwork network;
 
 	/**
 	 * Builds a manager for a Radial-Basis Function network which will classify

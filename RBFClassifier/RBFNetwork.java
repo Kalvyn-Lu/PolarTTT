@@ -6,8 +6,9 @@ import Logic.Main;
 
 public class RBFNetwork {
 	protected GaussianNode[] gnodes;
-	protected OutputNode[] onodes;
+	public OutputNode[] onodes;
 	protected float learning_rate;
+	
 	
 	/**
 	 * Constructs an actual Radial-Basis Function network

@@ -690,6 +690,7 @@ public class PolarTTT extends KeyAdapter{
 			}
 		}
 		
+/*
 		//	Found a win!
 		if (p1Counter == 4) {
 			return WIN_WEIGHT;
@@ -697,7 +698,6 @@ public class PolarTTT extends KeyAdapter{
 		else if (p2Counter == 4) {
 			return -WIN_WEIGHT;
 		}
-
 		//	It's my turn and I can win!
 		else if (p1Counter == 3 && player == PLAYER1) {
 			return WIN_WEIGHT;
@@ -706,7 +706,7 @@ public class PolarTTT extends KeyAdapter{
 		else if (p2Counter == 3 && player == PLAYER2) {
 			return -WIN_WEIGHT;
 		}
-		
+	*/	
 		//	returns the square of the result
 		return (p1Counter * p1Counter - p2Counter * p2Counter);
 	}
@@ -946,7 +946,6 @@ public class PolarTTT extends KeyAdapter{
 				}
 			}
 		}
-//		list[48] = ;
 		data.add(list);
 	}
 	
@@ -977,18 +976,20 @@ public class PolarTTT extends KeyAdapter{
 				
 			net.learn(datainner, list[48]);
 		}
-		/*
+		
 		for (int[] list : data) {
 			list[48] = res;
-			Main.sout("Classifier Learned",Arrays.toString(classifier.learn(list, 48)));
-		}*/
+			classifier.learn(list, 48);
+		}
 
         
+		
 		int[][] complete = new int[data.size()][49];
 		data.toArray(complete);
         
-		Main.int_to_csv("data/test.csv", complete, true);
+		//Main.int_to_csv("data/test.csv", complete, true);
 		classifier.save_weights("data/classifier_weights.csv");
+		net.printWeights();
 		
 		//	Clear the list!
 		data.clear();
