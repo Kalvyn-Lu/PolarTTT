@@ -2,6 +2,8 @@ package RBFClassifier;
 
 import java.util.Arrays;
 
+import Logic.Main;
+
 public class RBFNetwork {
 	protected GaussianNode[] gnodes;
 	protected OutputNode[] onodes;
@@ -38,12 +40,12 @@ public class RBFNetwork {
 	 * @param input
 	 * @return The outputs
 	 */
-	public float[] get_output(float[] input) {
+	public float[] get_output(float[] input, int num_input) {
 
 		//	Feed input layer into gaussian layer
 		float gaussian[] = new float[gnodes.length];
 		for (int i = 0; i < gaussian.length; i++) {
-			gaussian[i] = gnodes[i].output(input);
+			gaussian[i] = gnodes[i].output(input, num_input);
 		}
 		
 		//	Feed gaussian layer into output layer
@@ -71,12 +73,12 @@ public class RBFNetwork {
 			
 			//	Update the weights
 			for (int j = 0; j < onodes[i].weights.length; j++){
-				
-				//	The weight update function
-				onodes[i].weights[j] += 
+				float new_weight = onodes[i].weights[j] +
 						learning_rate *
 						error *
 						onodes[i].last_input[j];// * onodes[i].weights[j];
+				//	The weight update function
+				onodes[i].weights[j] = (new_weight < 0.000000001) ? 0 : new_weight;
 			}
 		}
 	}
@@ -88,22 +90,24 @@ class GaussianNode {
 	
 	public GaussianNode() { }
 	
-	public float output(float[] raw) {
+	public float output(float[] raw, int num_input) {
 		try {
 			//	Gaussify the distance between input layer and the gauss centers
 			return gaussian_function(
-				RBFClassifier.euclidean_distance(raw, centers)
+				RBFClassifier.euclidean_distance(raw, centers, num_input)
 			);
 		}
-		catch (ArrayIndexOutOfBoundsException e) {
-			System.out.println("Error reading data:");
-			System.out.println(Arrays.toString(raw));
+		catch (Exception e) {
+			Main.sout("Problem line",Arrays.toString(raw));
+			Main.sout("Centers",Arrays.toString(centers));
+			e.printStackTrace();
 			return 0;
 		}
 	}
 	
 	public void set_centers(float[] centers) {
-		this.centers = centers;
+		this.centers = new float[centers.length];
+		System.arraycopy(centers, 0, this.centers, 0, centers.length);
 	}
 	
 	private static float gaussian_function(double in) {

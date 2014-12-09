@@ -6,10 +6,27 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import RBFClassifier.RBFClassifier;
+
 public class Main {
 	public static void main(String[] args) {
 		//	Start the game
-		new PolarTTT().begin();
+		//new PolarTTT().begin();
+		RBFClassifier c = new RBFClassifier(48, 400, 3, .1f, .725f, "data/learnset.csv");
+		
+		float[][] input = csv_to_float("data/testset.csv");
+		int right = 0, all = 0;
+		for (float[] line : input) {try{
+			int classed = c.classify(line, 48);
+			all++;
+			Main.sout("classed "+line[48]+" as", classed);
+			if (classed == (int) line[48]) {
+				right++;
+			}}
+			catch (Exception e) {}
+		}
+		Main.sout("Right",right);
+		Main.sout("All",all);
 	}
 	
 	/**
