@@ -134,9 +134,9 @@ public class PolarTTT extends KeyAdapter{
 				return;
 			}
 			
-			if (turn % 5 == 3) {
+//			if (turn % 5 == 3) {
 				save_board(board);
-			}
+	//		}
 			
 			//if (checkWin(choice)) {
 			if (win(board, getPlayerSymbol(p), choice.r, choice.t)){
@@ -144,7 +144,7 @@ public class PolarTTT extends KeyAdapter{
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
 				fitnesses[turn - 1] = WIN_WEIGHT;
 				players[(turn + 1) & 1].incScore();
-				save_board(board);
+//				save_board(board);
 				save_data(getPlayerSymbol(players[(turn + 1) & 1]));
 				return;
 			}
@@ -944,6 +944,7 @@ public class PolarTTT extends KeyAdapter{
 				}
 			}
 		}
+//		list[48] = ;
 		data.add(list);
 	}
 	
@@ -962,12 +963,24 @@ public class PolarTTT extends KeyAdapter{
 		case PLAYER2:
 			res = 1;
 		}
+		data.get(data.size() - 1)[48] = res;
+		for (int [] list : data) {
+			if (list[48] != res) {
+				list[48] = -1;
+			}
+			float[] datainner = new float[48];
+			for (int i = 0; i < 48; i++) {
+				datainner[i] = (float)list[i];
+			}
+				
+			net.learn(datainner, list[48]);
+		}
 		
 		for (int[] list : data) {
 			list[48] = res;
 			Main.sout("Classifier Learned",Arrays.toString(classifier.learn(list, 48)));
 		}
-		
+
         
 		int[][] complete = new int[data.size()][49];
 		data.toArray(complete);
@@ -1139,7 +1152,7 @@ public class PolarTTT extends KeyAdapter{
 		//	@Kalvyn You might want to make this into a function
 		//	You also shold probably comment this.
         int layer[] = {48,10,1};
-        net = new NeuralNetwork();
+        net = new NeuralNetwork(layer);
         float[][] data = Main.csv_to_float(learnset);
         int j = 0;
         for(float[] line : data ){
