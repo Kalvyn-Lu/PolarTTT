@@ -46,9 +46,11 @@ public class PolarTTT extends KeyAdapter{
 				
 				else {
 					//	swap players to share the first-move bias
+					/*
 					Player temp = players[0];
 					players[0] = players[1];
 					players[1] = temp;
+					*/
 					
 					if (num_games % 25 == 0){
 						canvas.setInvisible(players[0], players[1]);
@@ -440,7 +442,7 @@ public class PolarTTT extends KeyAdapter{
 			break;
 		case ANN_FITNESS:
 			f=neuralFitness(board, player);
-                        f = player == PLAYER1 ? f : -f;
+//                        f = player == PLAYER1 ? f : -f;
 			break;
 		case NONE:
 			return 0;
@@ -975,11 +977,11 @@ public class PolarTTT extends KeyAdapter{
 				
 			net.learn(datainner, list[48]);
 		}
-		
+		/*
 		for (int[] list : data) {
 			list[48] = res;
 			Main.sout("Classifier Learned",Arrays.toString(classifier.learn(list, 48)));
-		}
+		}*/
 
         
 		int[][] complete = new int[data.size()][49];
@@ -1152,13 +1154,19 @@ public class PolarTTT extends KeyAdapter{
 		//	@Kalvyn You might want to make this into a function
 		//	You also shold probably comment this.
         int layer[] = {48,10,1};
-        net = new NeuralNetwork(layer);
+        net = new NeuralNetwork();
         float[][] data = Main.csv_to_float(learnset);
         int j = 0;
         for(float[] line : data ){
+
+            try {
             float[] boardArr = new float[48];
             System.arraycopy(line, 0, boardArr, 0, 48);
             net.learn(boardArr, line[48]);
+            }
+            catch (Exception e) {
+            	//Main.sout("Problem processing", Arrays.toString(line));
+            }
         }
      //  net.printWeights();
 		

@@ -7,7 +7,7 @@ public class NeuralNetwork {
     float[] lastOutput;
     float[] previousOutput;
     float learningRate = (float) .8;
-    float gamma =(float) 0.8;
+    float gamma =(float) 0.3;
     /**
      *
      * @param inLayers to initialize the Network. #indices = #of layers,

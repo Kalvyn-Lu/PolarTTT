@@ -145,7 +145,7 @@ public class RBFClassifier {
 		if (num_input == input.length) {
 			
 			//	SHow that there was an error with the input file
-			Main.sout("Input out of bounds", Arrays.toString(input));
+			//Main.sout("Input out of bounds", Arrays.toString(input));
 			
 			//	Ignore data we can't learn from
 			float[] fake = {0,0,0};
