@@ -178,6 +178,7 @@ public class GameCanvas extends Canvas {
 		}
 	}
 	
+	//	How far apart the menu items are spaced
 	private int menuitemy = 65;
 	
 	/**
@@ -341,7 +342,10 @@ public class GameCanvas extends Canvas {
 		g.drawString(p2name, 660, 130);
 		
 	}
-	
+	/**
+	 * Paints the game stats only
+	 * @param g 
+	 */
 	private void paintInvisible(Graphics2D g){
 		int games = game.gameCount();
 		if (games == 0) {
@@ -350,9 +354,12 @@ public class GameCanvas extends Canvas {
 			return;
 		}
 		
+		//	Get stats
 		int p1wins = p1.getScore();
 		int p2wins = p2.getScore();
 		int ties = game.tieCount();
+		
+		//	Draw all the stats
 		g.setColor(FOREGROUND_COLOR);
 		g.drawString("Number of games: ", 200, 200);
 		g.drawString("" + games, 350, 200);

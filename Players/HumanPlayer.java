@@ -13,13 +13,18 @@ public class HumanPlayer extends Player {
 	@Override
 	public Location getChoice(Location[] options) {
 		
-		//	Only accept user input that is a viable move
-		Location l = null;
+		Location move = null;
 		do {
-			l = getMouseInput();
+			
+			//	Get the human's move
+			move = getMouseInput();
 		}
-		while (!game.moveIsAvailable(l));
-		return l;
+		
+		//	Only accept user input that is a viable move
+		while (!game.moveIsAvailable(move));
+		
+		//	Pass on that good move
+		return move;
 	}
 	
 	@Override
