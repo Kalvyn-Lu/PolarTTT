@@ -1152,7 +1152,7 @@ public class PolarTTT extends KeyAdapter{
 		//	@Kalvyn You might want to make this into a function
 		//	You also shold probably comment this.
         int layer[] = {48,10,1};
-        net = new NeuralNetwork();
+        net = new NeuralNetwork(layer);
         float[][] data = Main.csv_to_float(learnset);
         int j = 0;
         for(float[] line : data ){
