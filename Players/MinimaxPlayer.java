@@ -68,6 +68,70 @@ public class MinimaxPlayer extends Player {
 			bestPlays[num_best++] = options[i];
 		}
 		
+		System.out.println("\nMinimax found options: ");
+		for (Location play : bestPlays){
+			try {
+				System.out.print(play.toString() + ", ");
+			}
+			catch (NullPointerException e) {
+				//	Don't print
+			}
+		}
+		
+		
+		if (use_pruning) {
+
+			//	Track the best moves
+			bestPlays = new Location[options.length];
+			num_best = 0; best_val = Integer.MIN_VALUE;
+			
+			//	Check everymove
+			for (int i = 0; i < options.length; i++) {
+				
+				//	Propose that move
+				char[][] theory = game.theoreticalMove(options[i], is_maximizer? PolarTTT.PLAYER1 : PolarTTT.PLAYER2);
+				
+				//	How good was it?
+				int theory_fitness = 0;
+				theory_fitness = minimax(theory, num_plies, !is_maximizer);
+				
+				//	Flip the fitness for maximizing
+				if (!is_maximizer) {
+					theory_fitness *= -1;
+				}
+				
+				//	Winning move- make it!
+				if (theory_fitness >= PolarTTT.WIN_WEIGHT / 2) {
+					bestPlays[0] = options[i];
+					num_best = 0;
+					break;
+				}
+				
+				//	The move sucks. Ignore it
+				if (theory_fitness < best_val) {
+					continue;
+				}
+				
+				//	Found a new best!
+				if (best_val < theory_fitness) {
+					best_val = theory_fitness;
+					num_best = 0;
+				}
+				
+				//	Add this move to the list of bests
+				bestPlays[num_best++] = options[i];
+			}
+			System.out.println("\nMinimax without pruning found options: ");
+			for (Location play : bestPlays){
+				try {
+					System.out.print(play.toString() + ", ");
+				}
+				catch (NullPointerException e) {
+					//	Don't print
+				}
+			}
+		}
+		System.out.println();
 		//	Pick between the best
 		return bestPlays[(int)(Math.random() * num_best)];
 	}

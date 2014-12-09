@@ -23,7 +23,9 @@ public class RBFClassifier {
 		
 		//	Learn from the data input and save it to a file
 		//set_centers_w("data/classifier_centers_saved_"+num_gaussian+".csv", data, num_gaussian);
-		set_centers_r("data/classifier_centers_saved_"+num_gaussian+".csv");
+		if (!set_centers_r("data/classifier_centers_saved_"+num_gaussian+".csv")) {
+			set_centers_w("data/classifier_centers_saved_"+num_gaussian+".csv", data, num_gaussian);
+		}
 		
 		//	Load the gaussians
 		int x = 0;
@@ -85,11 +87,15 @@ public class RBFClassifier {
 	 * Learn from a data file
 	 * @param filename The file to read from
 	 * @param num_inputs The size of the input data per line
+	 * @return Whether the program worked
 	 */
-	public void learn(String filename, int num_inputs) {
+	public boolean learn(String filename, int num_inputs) {
 		
 		//	Extract the data
 		float[][] data = Main.csv_to_float(filename);
+		if (data == null ) {
+			return false;
+		}
 		int x = 0;
 		System.out.println("Learning from input data");
 		
@@ -105,7 +111,8 @@ public class RBFClassifier {
 			if (learn(line, num_inputs) == null) {
 				Main.sout("On", x);
 			}
-		}		
+		}
+		return true;
 	}
 	
 	/**
@@ -204,12 +211,17 @@ public class RBFClassifier {
 	 * Sets the weights of the hidden layer based on the data. Also writes
 	 * the data to a file to read for later.
 	 * @param filename The input file
+	 * @return Whether it worked
 	 */
-	public void set_centers_r(String filename) {
+	public boolean set_centers_r(String filename) {
 		float[][] centers = Main.csv_to_float(filename);
+		if (centers == null) {
+			return false;
+		}
 		for (int i = 0; i < centers.length; i++) {
 			network.gnodes[i].set_centers(centers[i]);
 		}
+		return true;
 	}
 	
 	/**

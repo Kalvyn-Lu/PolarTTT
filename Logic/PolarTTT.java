@@ -172,8 +172,16 @@ public class PolarTTT extends KeyAdapter{
 			history[turn] = location;
 			
 			//	Evaluate the players' fitnesses;
-			fitness = getFitness(board, DYLAN_FITNESS, (0 == (turn & 1) ? PLAYER1 : PLAYER2 ));
+			char player = (0 == (turn & 1) ? PLAYER1 : PLAYER2 );
+			fitness = getFitness(board, DYLAN_FITNESS, player);
 			fitnesses[turn] = fitness;
+			if (isVisible) {
+				Main.sout("Dylan's fitness", fitness);
+				Main.sout("Alex's fitness", getFitness(board, ALEX_FITNESS, player));
+				Main.sout("Classifier's judgment", getFitness(board, CLASSIFIER_FITNESS, player));
+				Main.sout("Neural Network", getFitness(board, ANN_FITNESS, player));
+				System.out.println();
+			}
 			
 			//	Rotate turn count and thus give other player a turn
 			turn++;
@@ -654,19 +662,6 @@ public class PolarTTT extends KeyAdapter{
 	
 	private int dylan_helper(char[] vals, char player) {
 		
-		//	It's my turn and I can win!
-		//	Test the middle two match
-		if (player == vals[1] && player == vals[2]) {
-			
-			//	Test that there are three in a row with the third open
-			if (player == vals[0] && EMPTY == vals[3]
-			||	player == vals[3] && EMPTY == vals[0]) {
-				
-				//	I win!
-				return (player == PLAYER1 ? WIN_WEIGHT : -WIN_WEIGHT);
-			}
-		}
-		
 		//	Start with no finds
 		int p1Counter = 0, p2Counter = 0;
 		for(int i = 0; i< 4 ; i++) {
@@ -698,6 +693,15 @@ public class PolarTTT extends KeyAdapter{
 			return WIN_WEIGHT;
 		}
 		else if (p2Counter == 4) {
+			return -WIN_WEIGHT;
+		}
+
+		//	It's my turn and I can win!
+		else if (p1Counter == 3 && player == PLAYER1) {
+			return WIN_WEIGHT;
+		}
+		//	It's my turn and I can win!
+		else if (p2Counter == 3 && player == PLAYER2) {
 			return -WIN_WEIGHT;
 		}
 		
@@ -760,7 +764,7 @@ public class PolarTTT extends KeyAdapter{
 			}
 		}
 		
-		int output = classifier.classify(input);
+		int output = classifier.classify(input, 48);
 		
 		switch (output) {
 		case 0:
@@ -881,8 +885,7 @@ public class PolarTTT extends KeyAdapter{
 	 * Query the player for its name
 	 * @param player The player number to check
 	 * @return The name of that player
-	 */
-       
+	 */ 
 	public String getPlayerName(char player) {
 		try {
 			return players[getPlayerIndex(player)].getName();
@@ -962,11 +965,15 @@ public class PolarTTT extends KeyAdapter{
 		
 		for (int[] list : data) {
 			list[48] = res;
+			Main.sout("Classifier Learned",Arrays.toString(classifier.learn(list, 48)));
 		}
 		
+        
 		int[][] complete = new int[data.size()][49];
 		data.toArray(complete);
+        
 		Main.int_to_csv("data/test.csv", complete, true);
+		classifier.save_weights("data/classifier_weights.csv");
 		
 		//	Clear the list!
 		data.clear();
@@ -1124,32 +1131,37 @@ public class PolarTTT extends KeyAdapter{
 		//	Allow the keyboard input to be run
 		frame.addKeyListener(this);
 		
+		String learnset = "data/learnset.csv";
+		
 		//	Learing agents
-		//classifier = new RBFClassifier(48, 100, 3, 0.1f, 0.15f, "data/learnset.csv");
-                int layer[] = {48,10,1};
-                net = new NeuralNetwork(layer);
-                float[][] data = Main.csv_to_float("data/test.csv");
-                int j = 0;
-                for(float[] line : data ){
-                    float[] boardArr = new float[48];
-                    j++;
-                    for(int i = 0; i < 48;i++){
-                        boardArr[i]=line[i];
-                    }
-                    net.output(boardArr);
-                    try{
-                        net.backPropagation(line[48]);
-                    }
-                    catch(Exception E){
-                        for(int i = 0; i < line.length; i++){
-                            System.out.print((int)line[i]+",");
-                        }
-                        //System.out.println(line.length);
-                        System.out.println(j);
-                    }
-                    //System.out.println(line[48]);
+		classifier = new RBFClassifier(48, 400, 3, .1f, .725f, learnset);
+		
+		//	@Kalvyn You might want to make this into a function
+		//	You also shold probably comment this.
+        int layer[] = {48,10,1};
+        net = new NeuralNetwork(layer);
+        float[][] data = Main.csv_to_float(learnset);
+        int j = 0;
+        for(float[] line : data ){
+            float[] boardArr = new float[48];
+            j++;
+            for(int i = 0; i < 48;i++){
+                boardArr[i]=line[i];
+            }
+            net.output(boardArr);
+            try{
+                net.backPropagation(line[48]);
+            }
+            catch(Exception E){
+                for(int i = 0; i < line.length; i++){
+                    System.out.print((int)line[i]+",");
                 }
-             //  net.printWeights();
+                //System.out.println(line.length);
+                System.out.println(j);
+            }
+            //System.out.println(line[48]);
+        }
+     //  net.printWeights();
 		
 		//	Some new arrays need to be made
 		players = new Player[2];
