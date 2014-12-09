@@ -941,6 +941,7 @@ public class PolarTTT extends KeyAdapter{
 				}
 			}
 		}
+                list[48] = dylanFitness(board, PLAYER1);
 		data.add(list);
 	}
 	
@@ -951,7 +952,7 @@ public class PolarTTT extends KeyAdapter{
 	private void save_data(char winner) {
 		//	Default to a tie
 		int res = 2;
-		
+		System.out.println();
 		switch (winner) {
 		case PLAYER1:
 			res = 0;
@@ -960,13 +961,13 @@ public class PolarTTT extends KeyAdapter{
 			res = 1;
 		}
 		
-		for (int[] list : data) {
-			list[48] = res;
-		}
+//		for (int[] list : data) {
+//			list[48] = res;
+//		}
 		
 		int[][] complete = new int[data.size()][49];
 		data.toArray(complete);
-		Main.int_to_csv("data/test.csv", complete, true);
+		Main.int_to_csv("data/accu.csv", complete, true);
 		
 		//	Clear the list!
 		data.clear();
@@ -1126,9 +1127,9 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	Learing agents
 		//classifier = new RBFClassifier(48, 100, 3, 0.1f, 0.15f, "data/learnset.csv");
-                int layer[] = {48,10,1};
-                net = new NeuralNetwork(layer);
-                float[][] data = Main.csv_to_float("data/test.csv");
+
+                net = new NeuralNetwork();
+                float[][] data = Main.csv_to_float("data/learn1000.csv");
                 int j = 0;
                 for(float[] line : data ){
                     float[] boardArr = new float[48];
@@ -1139,6 +1140,8 @@ public class PolarTTT extends KeyAdapter{
                     net.output(boardArr);
                     try{
                         net.backPropagation(line[48]);
+                        net.printWeights();
+                        System.out.println("");
                     }
                     catch(Exception E){
                         for(int i = 0; i < line.length; i++){

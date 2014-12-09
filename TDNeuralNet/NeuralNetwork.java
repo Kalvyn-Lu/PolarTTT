@@ -3,17 +3,17 @@ package TDNeuralNet;
 public class NeuralNetwork {
 
     Neuron[][] net;
-    int[] layers = {48,400,1};
+    int[] layers = {48,400,200,1};
     float[] lastOutput;
     float[] previousOutput;
-    float learningRate = (float) 1;
+    float learningRate = (float) .8;
     float gamma =(float) 0.8;
     /**
      *
      * @param inLayers to initialize the Network. #indices = #of layers,
      * elements = #nodes
      */
-    public NeuralNetwork(int[] layer) {
+    public NeuralNetwork() {
         //layers = layer;
         lastOutput = new float[layers[layers.length-1]];
         previousOutput = new float[layers[layers.length-1]];
