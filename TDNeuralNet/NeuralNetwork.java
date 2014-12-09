@@ -42,6 +42,21 @@ public class NeuralNetwork {
         }
     }
 
+    public void learn (float[] boardArr, float answer) {
+            output(boardArr);
+            try{
+                backPropagation(answer);
+            }
+            catch(Exception E){
+                for(int i = 0; i < boardArr.length; i++){
+                    System.out.print((int)boardArr[i]+",");
+                }
+                //System.out.println(line.length);
+            }
+            //System.out.println(line[48]);
+
+    }
+    
     /**
      *
      * @param from The neuron for the connection to be made from

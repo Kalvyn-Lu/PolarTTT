@@ -1144,22 +1144,8 @@ public class PolarTTT extends KeyAdapter{
         int j = 0;
         for(float[] line : data ){
             float[] boardArr = new float[48];
-            j++;
-            for(int i = 0; i < 48;i++){
-                boardArr[i]=line[i];
-            }
-            net.output(boardArr);
-            try{
-                net.backPropagation(line[48]);
-            }
-            catch(Exception E){
-                for(int i = 0; i < line.length; i++){
-                    System.out.print((int)line[i]+",");
-                }
-                //System.out.println(line.length);
-                System.out.println(j);
-            }
-            //System.out.println(line[48]);
+            System.arraycopy(line, 0, boardArr, 0, 48);
+            net.learn(boardArr, line[48]);
         }
      //  net.printWeights();
 		
