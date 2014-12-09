@@ -117,9 +117,10 @@ public class NeuralNetwork {
                     //Adjust the weight
                     layers[i].edges.get(j).weight +=learningRate * (lastOutput[0] - previousOutput[0]);
                     //switch case 0 win, 1 loss, 2 tie
-                    if(win==0)  layers[i].edges.get(j).weight += learningRate* 0.5;
-                    else if(win == 1)  layers[i].edges.get(j).weight +=learningRate* -0.5;
-                    else  layers[i].edges.get(j).weight +=learningRate* 0;
+                    if(win==0)  layers[i].edges.get(j).weight += learningRate* 1;
+                    else if(win == 1)  layers[i].edges.get(j).weight +=learningRate* -1;
+                    else if(win == 2) layers[i].edges.get(j).weight +=learningRate* 0.5;
+                    else layers[i].edges.get(j).weight += 0;
                 }
             }
         }
