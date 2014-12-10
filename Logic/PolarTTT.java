@@ -3,7 +3,6 @@ package Logic;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import TDNeuralNet.*;
 
@@ -144,7 +143,7 @@ public class PolarTTT extends KeyAdapter{
 				canvas.setStatus(GameCanvas.STATUS_WON, turn, p.getName() + " ( " + getPlayerSymbol(p) + " ) got 4 in a row and won the game!\n");
 				fitnesses[turn - 1] = WIN_WEIGHT;
 				players[(turn + 1) & 1].incScore();
-//				save_board(board);
+//				save_board(board);	//	Guarantee the win state is saved (not necessary when printing every turn
 				save_data(getPlayerSymbol(players[(turn + 1) & 1]));
 				return;
 			}
@@ -177,7 +176,7 @@ public class PolarTTT extends KeyAdapter{
 			fitnesses[turn] = fitness;
 			if (isVisible) {
 				Main.sout("Dylan's fitness", fitness);
-				Main.sout("Alex's fitness", getFitness(board, ALEX_FITNESS, player));
+				Main.sout("Alt's fitness", getFitness(board, ALTERNATE_FITNESS, player));
 				Main.sout("Classifier's judgment", getFitness(board, CLASSIFIER_FITNESS, player));
 				Main.sout("Neural Network", getFitness(board, ANN_FITNESS, player));
 				System.out.println();
@@ -291,8 +290,8 @@ public class PolarTTT extends KeyAdapter{
 							players[i] = new RandomPlayer(NONE);
 							break;
 	
-						case GameCanvas.ALEX:
-							players[i] = new MinimaxPlayer(ALEX_FITNESS);
+						case GameCanvas.ALT:
+							players[i] = new MinimaxPlayer(ALTERNATE_FITNESS);
 							break;
 							
 						case GameCanvas.DYLAN:
@@ -432,8 +431,8 @@ public class PolarTTT extends KeyAdapter{
 		case DYLAN_FITNESS:
 			f= dylanFitness(board, player);
 			break;
-		case ALEX_FITNESS:
-			f=alexFitness(board, player);
+		case ALTERNATE_FITNESS:
+			f=alternate_fitness(board, player);
 			break;
 		case CLASSIFIER_FITNESS:
 			f=classifyFitness(board);
@@ -452,7 +451,7 @@ public class PolarTTT extends KeyAdapter{
 		return f;
 	}
 	
-	private int alexFitness(char[][] state, char player) {
+	private int alternate_fitness(char[][] state, char player) {
 		return (PLAYER2 == player ? -1 : 1) * heuristic(state, player);
 	}
 	
@@ -688,7 +687,7 @@ public class PolarTTT extends KeyAdapter{
 			}
 		}
 		
-/*
+/*	This was wrecking predictive measures though it's pretty logical to have these checks
 		//	Found a win!
 		if (p1Counter == 4) {
 			return WIN_WEIGHT;
@@ -710,7 +709,6 @@ public class PolarTTT extends KeyAdapter{
 	}
 	
 	
-	//	Kalvyn should do this
 	private int neuralFitness(char[][]board, char player) {
             float[]input=new float[48];
             int counter = 0;
@@ -739,12 +737,7 @@ public class PolarTTT extends KeyAdapter{
 	 */
 	public static final int WIN_WEIGHT = 1000000;
 	
-	//////////////////////////////
-	//		PRIVATE HELPERS		//
-	//////////////////////////////
 	
-
-	//	We're doing this
 	private int classifyFitness(char[][] board) {
 		float[] input = new float[48];
 		int i = 0;
@@ -812,11 +805,6 @@ public class PolarTTT extends KeyAdapter{
 		return hasAdjacent(board, r, t);
 	}
 	
-	//////////////////////////////
-	//		PUBLIC HELPERS		//
-	//////////////////////////////
-	
-
 	/**
 	 * Gets the turn count of the current play.
 	 * @return The current turn
@@ -977,7 +965,7 @@ public class PolarTTT extends KeyAdapter{
 		
 		for (int[] list : data) {
 			list[48] = res;
-			classifier.learn(list, 48);
+			classifier.learn(list, 48);	//	Commenting this will make the game render faster
 		}
 
         
@@ -987,7 +975,7 @@ public class PolarTTT extends KeyAdapter{
         
 		//Main.int_to_csv("data/test.csv", complete, true);
 		classifier.save_weights("data/classifier_weights.csv");
-		//net.printWeights();
+		//net.printWeights();	//	Uncommenting this will spare a lot of rendering
 		
 		//	Clear the list!
 		data.clear();
@@ -1095,7 +1083,7 @@ public class PolarTTT extends KeyAdapter{
 	public static final int
 		NONE = 0,
 		DYLAN_FITNESS = 3,
-		ALEX_FITNESS = 4,
+		ALTERNATE_FITNESS = 4,
 		ANN_FITNESS = 1,
 		CLASSIFIER_FITNESS = 2;
 	
@@ -1152,10 +1140,8 @@ public class PolarTTT extends KeyAdapter{
 		
 		//	@Kalvyn You might want to make this into a function
 		//	You also shold probably comment this.
-        int layer[] = {48,10,1};
         net = new NeuralNetwork();
         float[][] data = Main.csv_to_float(learnset);
-        int j = 0;
         for(float[] line : data ){
 
             try {

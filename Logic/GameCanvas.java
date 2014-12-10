@@ -498,8 +498,8 @@ public class GameCanvas extends Canvas {
 	private String[][] menu = 
 		{
 			{"One Game", "Bulk Training"},
-			{"Human", "Random", "Alex", "Dylan", "Classifier", "ANN"},
-			{"Human", "Random", "Alex", "Dylan", "Classifier", "ANN"},
+			{"Human", "Random", "Alternate", "Dylan", "Classifier", "ANN"},
+			{"Human", "Random", "Alternate", "Dylan", "Classifier", "ANN"},
 			{"1"},
 			{"Yes Yes Yes!", "No No No!"},
 			{"1"},
@@ -509,7 +509,7 @@ public class GameCanvas extends Canvas {
 	public static final int
 		HUMAN = 0,
 		RANDOM = 1,
-		ALEX = 2,
+		ALT = 2,
 		DYLAN = 3,
 		CLASSIFIER = 4,
 		ANN = 5;

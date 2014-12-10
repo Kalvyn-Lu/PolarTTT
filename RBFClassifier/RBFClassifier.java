@@ -1,8 +1,6 @@
 package RBFClassifier;
 
-import java.util.Arrays;
 import java.util.HashMap;
-
 import Logic.Main;
 
 public class RBFClassifier {

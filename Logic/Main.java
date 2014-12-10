@@ -6,29 +6,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import RBFClassifier.RBFClassifier;
-
 public class Main {
 	public static void main(String[] args) {
 		//	Start the game
 		new PolarTTT().begin();
-		
-		/*//	Test the classifier
-		RBFClassifier c = new RBFClassifier(48, 400, 3, .1f, .725f, "data/learnset.csv");
-		
-		float[][] input = csv_to_float("data/testset.csv");
-		int right = 0, all = 0;
-		for (float[] line : input) {try{
-			int classed = c.classify(line, 48);
-			all++;
-			Main.sout("classed "+line[48]+" as", classed);
-			if (classed == (int) line[48]) {
-				right++;
-			}}
-			catch (Exception e) {}
-		}
-		Main.sout("Right",right);
-		Main.sout("All",all);*/
 	}
 	
 	/**
@@ -40,6 +21,11 @@ public class Main {
 		System.out.println(anchor + ": " + (var == null ? "null" : var));
 	}
 	
+	/**
+	 * Converts a csv file into a float double array
+	 * @param filename The file to read from
+	 * @return The resulting float double array
+	 */
 	public static float[][] csv_to_float(String filename) {
 		System.out.println("Opening " + filename);
 		BufferedReader file = null;
@@ -76,6 +62,12 @@ public class Main {
 		return data;
 	}
 
+	/**
+	 * Stores a float double array into a csv file
+	 * @param filename The name of the destination file
+	 * @param data The data to store
+	 * @param append Whether to add to the existing file or just overwrite it
+	 */
 	public static void float_to_csv(String filename, float[][] data, boolean append) {
 		BufferedWriter writer = null;
 		try {
@@ -104,6 +96,13 @@ public class Main {
 			catch (Exception ex) {}
 		}
 	}
+
+	/**
+	 * Stores an int double array into a csv file
+	 * @param filename The name of the destination file
+	 * @param data The data to store
+	 * @param append Whether to add to the existing file or just overwrite it
+	 */
 	public static void int_to_csv(String filename, int[][] data, boolean append) {
 		BufferedWriter writer = null;
 		try {
@@ -111,7 +110,6 @@ public class Main {
 			
 			for (int i = 0; i < data.length; i++){
 				
-				//	Dirty implode (Java so lame)
 				String line = "";
 				for (int j = 0; j < data[i].length; j++) {
 					line += data[i][j] + ",";

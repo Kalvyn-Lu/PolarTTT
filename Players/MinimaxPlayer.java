@@ -364,8 +364,8 @@ public class MinimaxPlayer extends Player {
 		case PolarTTT.DYLAN_FITNESS:
 			name = "Dylan's ";
 			break;
-		case PolarTTT.ALEX_FITNESS:
-			name = "Alex's ";
+		case PolarTTT.ALTERNATE_FITNESS:
+			name = "Alt's ";
 			break;
 		case PolarTTT.CLASSIFIER_FITNESS:
 			name = "Classifer ";
