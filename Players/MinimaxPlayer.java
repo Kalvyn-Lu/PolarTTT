@@ -233,9 +233,11 @@ public class MinimaxPlayer extends Player {
 				undomove(board, choice);
 				
 				alpha = Math.max(fitness, alpha);
+				
 				if (beta <= alpha) {
 					return beta;
 				}
+				
 				if (best < fitness) {
 					best = fitness;
 				}

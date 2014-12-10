@@ -46,11 +46,9 @@ public class PolarTTT extends KeyAdapter{
 				
 				else {
 					//	swap players to share the first-move bias
-					/*
 					Player temp = players[0];
 					players[0] = players[1];
 					players[1] = temp;
-					*/
 					
 					if (num_games % 25 == 0){
 						canvas.setInvisible(players[0], players[1]);
@@ -731,7 +729,7 @@ public class PolarTTT extends KeyAdapter{
                     }
                 }
             }
-		return (int)(net.output(input)[0] * 1000);
+		return (int)(net.output(input)[0] * 52.6f);
 	}
 
 	
@@ -989,7 +987,7 @@ public class PolarTTT extends KeyAdapter{
         
 		//Main.int_to_csv("data/test.csv", complete, true);
 		classifier.save_weights("data/classifier_weights.csv");
-		net.printWeights();
+		//net.printWeights();
 		
 		//	Clear the list!
 		data.clear();
@@ -1169,7 +1167,7 @@ public class PolarTTT extends KeyAdapter{
             	//Main.sout("Problem processing", Arrays.toString(line));
             }
         }
-     //  net.printWeights();
+        net.printWeights();
 		
 		//	Some new arrays need to be made
 		players = new Player[2];

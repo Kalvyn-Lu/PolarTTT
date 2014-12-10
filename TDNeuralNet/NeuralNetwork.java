@@ -3,7 +3,7 @@ package TDNeuralNet;
 public class NeuralNetwork {
 
     Neuron[][] net;
-    int[] layers = {48,400,200,1};
+    int[] layers = {48,20,20,1};
     float[] lastOutput;
     float[] previousOutput;
     float learningRate = (float) .8;
@@ -127,13 +127,15 @@ public class NeuralNetwork {
     }
     
    public void printWeights(){
+	   String str = "";
         for(Neuron[] layers: net){
             for(int i = 0; i < layers.length;i++){
                 for(int j = 0; j < layers[i].edges.size();j++){
-                   System.out.print( layers[i].edges.get(j).weight+",");
+                   str += layers[i].edges.get(j).weight+",";
                 }
             }
         }
+        System.out.println(str);
     }
 
     
